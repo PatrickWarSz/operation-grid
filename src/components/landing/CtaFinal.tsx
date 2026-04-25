@@ -50,14 +50,14 @@ export function SiteFooter() {
             </span>
           </Link>
           <p className="mt-3 text-sm text-muted-foreground max-w-sm">
-            O sistema operacional do seu negócio. Multi-módulos, multi-tenant, sob medida.
+            A operação inteira da sua empresa, em um só lugar. Multi-programas, multi-tenant, sob medida.
           </p>
         </div>
 
         <div>
           <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground mb-3">Produto</p>
           <ul className="space-y-2 text-sm">
-            <li><a href="#modulos" className="text-foreground/80 hover:text-foreground">Módulos</a></li>
+            <li><a href="#programas" className="text-foreground/80 hover:text-foreground">Programas</a></li>
             <li><a href="#precos" className="text-foreground/80 hover:text-foreground">Preços</a></li>
             <li><a href="#showcase" className="text-foreground/80 hover:text-foreground">Demonstração</a></li>
           </ul>
