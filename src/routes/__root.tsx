@@ -29,19 +29,28 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Hub Nexus — O sistema operacional do seu negócio" },
+      {
+        name: "description",
+        content:
+          "Estoque, Financeiro, Vendas, Devoluções e mais. Ative apenas os módulos que precisa hoje. Escale conforme cresce.",
+      },
+      { name: "author", content: "Hub Nexus" },
+      { property: "og:title", content: "Hub Nexus — O sistema operacional do seu negócio" },
+      {
+        property: "og:description",
+        content: "A operação inteira da sua empresa, em um só lugar.",
+      },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: appCss,
+        href: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap",
       },
     ],
   }),
