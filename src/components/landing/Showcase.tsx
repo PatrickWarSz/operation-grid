@@ -16,10 +16,10 @@ export function Showcase() {
         <div className="text-center max-w-2xl mx-auto mb-16">
           <p className="text-xs font-mono uppercase tracking-widest text-primary mb-3">Em ação</p>
           <h2 className="font-display text-4xl md:text-5xl font-semibold tracking-tight">
-            Veja cada módulo funcionando.
+            Veja cada programa funcionando.
           </h2>
           <p className="mt-4 text-muted-foreground">
-            Clique em um módulo à esquerda. A demonstração é exibida ao lado, com play automático.
+            Clique em um programa à esquerda. A demonstração é exibida ao lado, com play automático.
           </p>
         </div>
 
