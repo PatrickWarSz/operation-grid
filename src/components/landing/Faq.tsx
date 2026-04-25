@@ -7,8 +7,8 @@ import {
 
 const FAQ = [
   {
-    q: "Como funciona a contratação por módulo?",
-    a: "Você seleciona apenas os módulos que precisa. Cada módulo tem um preço mensal fixo. Pode adicionar ou remover quando quiser, sem multa.",
+    q: "Como funciona a contratação por programa?",
+    a: "Você seleciona apenas os programas que precisa. Cada programa tem um preço mensal fixo. Pode adicionar ou remover quando quiser, sem multa.",
   },
   {
     q: "Meus dados ficam isolados dos outros clientes?",
@@ -32,7 +32,7 @@ const FAQ = [
   },
   {
     q: "Posso testar antes de pagar?",
-    a: "Sim. Oferecemos período de avaliação para você validar com sua equipe antes de assinar.",
+    a: "Sim. Você tem 14 dias de teste gratuito com acesso a todos os programas. Sem cartão de crédito. Após esse período, escolha quais programas manter ativos para continuar usando.",
   },
 ];
 
