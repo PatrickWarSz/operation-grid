@@ -100,10 +100,10 @@ export function Pricing() {
             <div>
               <p className="text-xs font-mono uppercase tracking-widest text-primary mb-2">Monte o seu</p>
               <h3 className="font-display text-3xl font-semibold tracking-tight">
-                Pague apenas pelos módulos que vai usar.
+                Pague apenas pelos programas que vai usar.
               </h3>
               <p className="text-sm text-muted-foreground mt-2 max-w-xl">
-                Selecione abaixo. 3 módulos ou mais ganham <span className="text-primary font-medium">10% de desconto</span>.
+                Selecione abaixo. 3 programas ou mais ganham <span className="text-primary font-medium">10% de desconto</span>.
               </p>
             </div>
           </div>
@@ -150,7 +150,7 @@ export function Pricing() {
                 Resumo
               </div>
               <div className="text-sm text-muted-foreground mb-4">
-                {selected.length} {selected.length === 1 ? "módulo selecionado" : "módulos selecionados"}
+                {selected.length} {selected.length === 1 ? "programa selecionado" : "programas selecionados"}
               </div>
               <div className="space-y-1 text-sm mb-4">
                 <div className="flex justify-between">
@@ -178,11 +178,11 @@ export function Pricing() {
                   className="w-full bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
                   disabled={selected.length === 0}
                 >
-                  Contratar agora
+                  Iniciar teste de 14 dias
                 </Button>
               </Link>
               <p className="text-[11px] text-muted-foreground mt-3 text-center">
-                Sem fidelidade • Cancele a qualquer momento
+                14 dias grátis · Sem cartão de crédito · Sem fidelidade
               </p>
             </div>
           </div>

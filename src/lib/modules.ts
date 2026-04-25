@@ -146,7 +146,7 @@ export const PLANS = [
     badge: null as string | null,
     includes: ["devolucoes"],
     features: [
-      "1 módulo à escolha",
+      "1 programa à escolha",
       "Até 3 usuários",
       "Suporte por e-mail",
       "Atualizações globais",
@@ -160,7 +160,7 @@ export const PLANS = [
     badge: "Mais popular",
     includes: ["devolucoes", "estoque", "financeiro-empresa"],
     features: [
-      "3 módulos inclusos",
+      "3 programas inclusos",
       "Até 10 usuários",
       "White-label básico",
       "Suporte prioritário",
@@ -175,7 +175,7 @@ export const PLANS = [
     badge: null,
     includes: MODULES.filter((m) => m.status === "available").map((m) => m.id),
     features: [
-      "Todos os módulos disponíveis",
+      "Todos os programas disponíveis",
       "Usuários ilimitados",
       "White-label completo",
       "SLA dedicado",

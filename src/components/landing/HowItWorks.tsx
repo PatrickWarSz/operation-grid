@@ -3,8 +3,8 @@ import { MousePointerClick, ToggleRight, TrendingUp } from "lucide-react";
 const STEPS = [
   {
     icon: MousePointerClick,
-    title: "Escolha seus módulos",
-    desc: "Selecione apenas as soluções que sua empresa precisa hoje. Sem pagar pelo que não usa.",
+    title: "Escolha seus programas",
+    desc: "Selecione apenas os programas que sua empresa precisa hoje. Sem pagar pelo que não usa.",
   },
   {
     icon: ToggleRight,
@@ -14,7 +14,7 @@ const STEPS = [
   {
     icon: TrendingUp,
     title: "Escale conforme cresce",
-    desc: "Adicione novos módulos a qualquer momento. Tudo conectado, sem migração.",
+    desc: "Adicione novos programas a qualquer momento. Tudo conectado, sem migração.",
   },
 ];
 
