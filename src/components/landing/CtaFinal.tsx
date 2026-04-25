@@ -18,7 +18,7 @@ export function CtaFinal() {
           <span className="text-gradient-primary">sua operação?</span>
         </h2>
         <p className="mt-6 text-lg text-muted-foreground max-w-xl mx-auto">
-          Junte-se às empresas que pararam de pular entre 5 sistemas diferentes para tomar uma decisão.
+          Junte-se às empresas que pararam de se perder em milhares de planilhas espalhadas, corrompidas e perdidas.
         </p>
         <div className="mt-9 flex flex-wrap justify-center gap-3">
           <Link to="/signup">
