@@ -27,10 +27,10 @@ export function Hero() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.05 }}
-          className="font-display text-3xl md:text-4xl lg:text-5xl font-semibold leading-[1.1] tracking-tight max-w-3xl mx-auto"
+          className="font-sans text-5xl md:text-7xl lg:text-8xl font-bold leading-[1.05] tracking-tight max-w-5xl mx-auto"
         >
-          A operação inteira da sua empresa,{" "}
-          <span className="text-gradient-primary">em um só lugar.</span>
+          A operação inteira da sua empresa{" "}
+          <span className="text-gradient-primary">em um só lugar</span>
         </motion.h1>
 
         <motion.p
