@@ -13,7 +13,13 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppsSlugRouteImport } from './routes/apps.$slug'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
+import { Route as AppsSlugPreviewRouteImport } from './routes/apps.$slug.preview'
+import { Route as AuthenticatedAppProgramasRouteImport } from './routes/_authenticated/app.programas'
+import { Route as AuthenticatedAppConfiguracoesRouteImport } from './routes/_authenticated/app.configuracoes'
+import { Route as AuthenticatedAppCatalogoRouteImport } from './routes/_authenticated/app.catalogo'
+import { Route as AuthenticatedAppProgramasSlugRouteImport } from './routes/_authenticated/app.programas.$slug'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -34,23 +40,69 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppsSlugRoute = AppsSlugRouteImport.update({
+  id: '/apps/$slug',
+  path: '/apps/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
   id: '/app',
   path: '/app',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AppsSlugPreviewRoute = AppsSlugPreviewRouteImport.update({
+  id: '/preview',
+  path: '/preview',
+  getParentRoute: () => AppsSlugRoute,
+} as any)
+const AuthenticatedAppProgramasRoute =
+  AuthenticatedAppProgramasRouteImport.update({
+    id: '/programas',
+    path: '/programas',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppConfiguracoesRoute =
+  AuthenticatedAppConfiguracoesRouteImport.update({
+    id: '/configuracoes',
+    path: '/configuracoes',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppCatalogoRoute =
+  AuthenticatedAppCatalogoRouteImport.update({
+    id: '/catalogo',
+    path: '/catalogo',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppProgramasSlugRoute =
+  AuthenticatedAppProgramasSlugRouteImport.update({
+    id: '/$slug',
+    path: '/$slug',
+    getParentRoute: () => AuthenticatedAppProgramasRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
-  '/app': typeof AuthenticatedAppRoute
+  '/app': typeof AuthenticatedAppRouteWithChildren
+  '/apps/$slug': typeof AppsSlugRouteWithChildren
+  '/app/catalogo': typeof AuthenticatedAppCatalogoRoute
+  '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
+  '/app/programas': typeof AuthenticatedAppProgramasRouteWithChildren
+  '/apps/$slug/preview': typeof AppsSlugPreviewRoute
+  '/app/programas/$slug': typeof AuthenticatedAppProgramasSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
-  '/app': typeof AuthenticatedAppRoute
+  '/app': typeof AuthenticatedAppRouteWithChildren
+  '/apps/$slug': typeof AppsSlugRouteWithChildren
+  '/app/catalogo': typeof AuthenticatedAppCatalogoRoute
+  '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
+  '/app/programas': typeof AuthenticatedAppProgramasRouteWithChildren
+  '/apps/$slug/preview': typeof AppsSlugPreviewRoute
+  '/app/programas/$slug': typeof AuthenticatedAppProgramasSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -58,13 +110,39 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
-  '/_authenticated/app': typeof AuthenticatedAppRoute
+  '/_authenticated/app': typeof AuthenticatedAppRouteWithChildren
+  '/apps/$slug': typeof AppsSlugRouteWithChildren
+  '/_authenticated/app/catalogo': typeof AuthenticatedAppCatalogoRoute
+  '/_authenticated/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
+  '/_authenticated/app/programas': typeof AuthenticatedAppProgramasRouteWithChildren
+  '/apps/$slug/preview': typeof AppsSlugPreviewRoute
+  '/_authenticated/app/programas/$slug': typeof AuthenticatedAppProgramasSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/signup' | '/app'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/signup'
+    | '/app'
+    | '/apps/$slug'
+    | '/app/catalogo'
+    | '/app/configuracoes'
+    | '/app/programas'
+    | '/apps/$slug/preview'
+    | '/app/programas/$slug'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/signup' | '/app'
+  to:
+    | '/'
+    | '/login'
+    | '/signup'
+    | '/app'
+    | '/apps/$slug'
+    | '/app/catalogo'
+    | '/app/configuracoes'
+    | '/app/programas'
+    | '/apps/$slug/preview'
+    | '/app/programas/$slug'
   id:
     | '__root__'
     | '/'
@@ -72,6 +150,12 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/_authenticated/app'
+    | '/apps/$slug'
+    | '/_authenticated/app/catalogo'
+    | '/_authenticated/app/configuracoes'
+    | '/_authenticated/app/programas'
+    | '/apps/$slug/preview'
+    | '/_authenticated/app/programas/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -79,6 +163,7 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
   SignupRoute: typeof SignupRoute
+  AppsSlugRoute: typeof AppsSlugRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -111,6 +196,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/apps/$slug': {
+      id: '/apps/$slug'
+      path: '/apps/$slug'
+      fullPath: '/apps/$slug'
+      preLoaderRoute: typeof AppsSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/app': {
       id: '/_authenticated/app'
       path: '/app'
@@ -118,19 +210,95 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/apps/$slug/preview': {
+      id: '/apps/$slug/preview'
+      path: '/preview'
+      fullPath: '/apps/$slug/preview'
+      preLoaderRoute: typeof AppsSlugPreviewRouteImport
+      parentRoute: typeof AppsSlugRoute
+    }
+    '/_authenticated/app/programas': {
+      id: '/_authenticated/app/programas'
+      path: '/programas'
+      fullPath: '/app/programas'
+      preLoaderRoute: typeof AuthenticatedAppProgramasRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/configuracoes': {
+      id: '/_authenticated/app/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/app/configuracoes'
+      preLoaderRoute: typeof AuthenticatedAppConfiguracoesRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/catalogo': {
+      id: '/_authenticated/app/catalogo'
+      path: '/catalogo'
+      fullPath: '/app/catalogo'
+      preLoaderRoute: typeof AuthenticatedAppCatalogoRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/programas/$slug': {
+      id: '/_authenticated/app/programas/$slug'
+      path: '/$slug'
+      fullPath: '/app/programas/$slug'
+      preLoaderRoute: typeof AuthenticatedAppProgramasSlugRouteImport
+      parentRoute: typeof AuthenticatedAppProgramasRoute
+    }
   }
 }
 
+interface AuthenticatedAppProgramasRouteChildren {
+  AuthenticatedAppProgramasSlugRoute: typeof AuthenticatedAppProgramasSlugRoute
+}
+
+const AuthenticatedAppProgramasRouteChildren: AuthenticatedAppProgramasRouteChildren =
+  {
+    AuthenticatedAppProgramasSlugRoute: AuthenticatedAppProgramasSlugRoute,
+  }
+
+const AuthenticatedAppProgramasRouteWithChildren =
+  AuthenticatedAppProgramasRoute._addFileChildren(
+    AuthenticatedAppProgramasRouteChildren,
+  )
+
+interface AuthenticatedAppRouteChildren {
+  AuthenticatedAppCatalogoRoute: typeof AuthenticatedAppCatalogoRoute
+  AuthenticatedAppConfiguracoesRoute: typeof AuthenticatedAppConfiguracoesRoute
+  AuthenticatedAppProgramasRoute: typeof AuthenticatedAppProgramasRouteWithChildren
+}
+
+const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
+  AuthenticatedAppCatalogoRoute: AuthenticatedAppCatalogoRoute,
+  AuthenticatedAppConfiguracoesRoute: AuthenticatedAppConfiguracoesRoute,
+  AuthenticatedAppProgramasRoute: AuthenticatedAppProgramasRouteWithChildren,
+}
+
+const AuthenticatedAppRouteWithChildren =
+  AuthenticatedAppRoute._addFileChildren(AuthenticatedAppRouteChildren)
+
 interface AuthenticatedRouteChildren {
-  AuthenticatedAppRoute: typeof AuthenticatedAppRoute
+  AuthenticatedAppRoute: typeof AuthenticatedAppRouteWithChildren
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
-  AuthenticatedAppRoute: AuthenticatedAppRoute,
+  AuthenticatedAppRoute: AuthenticatedAppRouteWithChildren,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
   AuthenticatedRouteChildren,
+)
+
+interface AppsSlugRouteChildren {
+  AppsSlugPreviewRoute: typeof AppsSlugPreviewRoute
+}
+
+const AppsSlugRouteChildren: AppsSlugRouteChildren = {
+  AppsSlugPreviewRoute: AppsSlugPreviewRoute,
+}
+
+const AppsSlugRouteWithChildren = AppsSlugRoute._addFileChildren(
+  AppsSlugRouteChildren,
 )
 
 const rootRouteChildren: RootRouteChildren = {
@@ -138,6 +306,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
   SignupRoute: SignupRoute,
+  AppsSlugRoute: AppsSlugRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
