@@ -1,147 +1,230 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { MODULES } from "@/lib/modules";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
-import { Lock, ArrowRight, Sparkles, Clock } from "lucide-react";
+import { MODULES } from "@/lib/modules";
+import { firstName, greetingFor } from "@/lib/workspace-theme";
+import { ArrowRight, Lock, Sparkles, Clock } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/app")({
-  head: () => ({
-    meta: [{ title: "Portal — Hub Nexus" }],
-  }),
-  component: AppPortal,
+  head: () => ({ meta: [{ title: "Início — Workspace" }] }),
+  component: HomePortal,
 });
 
-interface ModuleAccess {
-  module_id: string;
-  status: "active" | "trial" | "blocked";
-}
-
-function AppPortal() {
+function HomePortal() {
   const { user } = useAuth();
-  const [access, setAccess] = useState<ModuleAccess[]>([]);
-  const [tenantName, setTenantName] = useState<string>("");
-  const [loading, setLoading] = useState(true);
+  const { loading, tenantName, fullName, branding, access } = useWorkspace();
 
-  useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
+  const display = firstName(fullName ?? user?.email ?? "");
+  const greeting = greetingFor();
+  const workspaceLabel = branding.workspace_name || tenantName || "Workspace";
 
-    (async () => {
-      // pega o tenant do usuário via profile
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("tenant_id, tenants(name)")
-        .eq("id", user.id)
-        .maybeSingle();
+  if (loading) return <PortalSkeleton />;
 
-      if (cancelled) return;
-
-      // @ts-expect-error — tenants vem como objeto da relação
-      const name = profile?.tenants?.name as string | undefined;
-      if (name) setTenantName(name);
-
-      if (profile?.tenant_id) {
-        const { data: rows } = await supabase
-          .from("tenant_module_access")
-          .select("module_id, status")
-          .eq("tenant_id", profile.tenant_id);
-        if (!cancelled && rows) setAccess(rows as ModuleAccess[]);
-      }
-      if (!cancelled) setLoading(false);
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
-
-  const accessMap = new Map(access.map((a) => [a.module_id, a.status]));
+  const activeModules = MODULES.filter(
+    (m) => access.get(m.id) === "active" || access.get(m.id) === "trial",
+  );
+  const lockedModules = MODULES.filter(
+    (m) => !["active", "trial"].includes(access.get(m.id) ?? "blocked"),
+  );
 
   return (
-    <main className="mx-auto max-w-7xl px-6 py-10">
-      <div className="mb-10">
-        <p className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground">
-          Bem-vindo de volta
+    <div className="max-w-7xl mx-auto">
+      {/* Saudação */}
+      <section className="mb-10">
+        <p className="text-sm ws-text-muted">
+          {greeting}{display ? `, ${display}` : ""} 👋
         </p>
-        <h1 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight mt-1">
-          {tenantName ? `Hub ${tenantName}` : "Seu Hub"}
+        <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight ws-text mt-1">
+          Bem-vindo ao {workspaceLabel}
         </h1>
-        <p className="text-sm text-muted-foreground mt-2 max-w-xl">
-          Acesse os programas da sua operação. Programas bloqueados podem ser ativados a qualquer momento.
+        <p className="text-sm ws-text-muted mt-2 max-w-2xl">
+          Acesse seus programas ativos abaixo. Tudo o que sua equipe precisa em um só lugar.
         </p>
+      </section>
+
+      {/* Ativos */}
+      <section className="mb-12">
+        <SectionHeading
+          title="Seus programas"
+          count={activeModules.length}
+          subtitle="Programas ativos da sua operação"
+        />
+
+        {activeModules.length === 0 ? (
+          <div className="ws-card p-10 text-center">
+            <p className="text-sm ws-text-muted">
+              Nenhum programa ativo ainda. Veja o catálogo abaixo.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {activeModules.map((m) => (
+              <ActiveProgramCard key={m.id} module={m} status={access.get(m.id)!} />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Bloqueados / catálogo inline */}
+      {lockedModules.length > 0 && (
+        <section>
+          <SectionHeading
+            title="Disponíveis para ativar"
+            count={lockedModules.length}
+            subtitle="Expanda sua operação quando fizer sentido"
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {lockedModules.map((m) => (
+              <LockedProgramCard key={m.id} module={m} />
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
+
+function SectionHeading({
+  title,
+  count,
+  subtitle,
+}: {
+  title: string;
+  count: number;
+  subtitle: string;
+}) {
+  return (
+    <div className="flex items-end justify-between mb-5">
+      <div>
+        <div className="flex items-center gap-2.5">
+          <h2 className="text-lg font-semibold ws-text">{title}</h2>
+          <span className="text-[11px] font-medium px-2 py-0.5 rounded-full ws-surface-2 ws-text-muted">
+            {count}
+          </span>
+        </div>
+        <p className="text-xs ws-text-muted mt-1">{subtitle}</p>
+      </div>
+    </div>
+  );
+}
+
+type ModuleType = (typeof MODULES)[number];
+
+function ActiveProgramCard({ module: m, status }: { module: ModuleType; status: string }) {
+  const Icon = m.icon;
+  return (
+    <Link
+      to="/app/programas/$slug"
+      params={{ slug: m.id }}
+      className="ws-card group overflow-hidden hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 flex flex-col"
+    >
+      {/* Preview live (iframe-ready) */}
+      <div className="aspect-[16/10] ws-surface-2 relative overflow-hidden border-b ws-border" style={{ borderBottomWidth: 1 }}>
+        <ProgramLivePreview slug={m.id} />
+        {status === "trial" && (
+          <span className="absolute top-3 right-3 inline-flex items-center gap-1 rounded-full bg-amber-500/90 text-white text-[10px] font-medium px-2 py-1">
+            <Clock className="h-3 w-3" />
+            trial
+          </span>
+        )}
       </div>
 
-      {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="aspect-[5/3] rounded-2xl border border-border bg-card-elevated/40 animate-pulse" />
-          ))}
+      <div className="p-5 flex-1 flex flex-col">
+        <div className="flex items-start gap-3">
+          <div className="h-9 w-9 rounded-lg flex items-center justify-center ws-primary-bg text-white shrink-0">
+            <Icon className="h-4.5 w-4.5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="font-semibold ws-text truncate">{m.name}</h3>
+            <p className="text-xs ws-text-muted line-clamp-2 mt-1">{m.short}</p>
+          </div>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {MODULES.map((m) => {
-            const status = accessMap.get(m.id) ?? "blocked";
-            const isActive = status === "active" || status === "trial";
-            const Icon = m.icon;
-            const comingSoon = m.status === "coming_soon";
-
-            return (
-              <div
-                key={m.id}
-                className={
-                  "relative rounded-2xl border p-5 transition-all " +
-                  (isActive
-                    ? "border-primary/30 bg-card-elevated hover:border-primary/60 hover:shadow-elevated"
-                    : "border-border bg-locked/40")
-                }
-              >
-                {status === "trial" && (
-                  <span className="absolute top-3 right-3 inline-flex items-center gap-1 rounded-full bg-primary/15 text-primary text-[10px] font-mono px-2 py-0.5">
-                    <Clock className="h-3 w-3" />
-                    trial
-                  </span>
-                )}
-                {comingSoon && (
-                  <span className="absolute top-3 right-3 inline-flex items-center gap-1 rounded-full bg-muted text-muted-foreground text-[10px] font-mono px-2 py-0.5">
-                    em breve
-                  </span>
-                )}
-
-                <div className={"inline-flex h-10 w-10 items-center justify-center rounded-xl " + (isActive ? "bg-primary/15 text-primary" : "bg-muted text-locked-foreground")}>
-                  <Icon className="h-5 w-5" />
-                </div>
-
-                <h3 className="mt-4 font-display text-lg font-semibold tracking-tight">{m.name}</h3>
-                <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{m.short}</p>
-
-                <div className="mt-5 flex items-center justify-between">
-                  {isActive && !comingSoon ? (
-                    <button className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline">
-                      Abrir programa
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </button>
-                  ) : comingSoon ? (
-                    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <Sparkles className="h-3.5 w-3.5" />
-                      Em desenvolvimento
-                    </span>
-                  ) : (
-                    <Link
-                      to="/"
-                      hash="planos"
-                      className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-                    >
-                      <Lock className="h-3.5 w-3.5" />
-                      Ativar este programa
-                    </Link>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+        <div className="mt-4 flex items-center justify-between">
+          <span className="text-xs font-medium ws-primary-text inline-flex items-center gap-1.5 group-hover:gap-2 transition-all">
+            Abrir programa
+            <ArrowRight className="h-3.5 w-3.5" />
+          </span>
         </div>
-      )}
-    </main>
+      </div>
+    </Link>
+  );
+}
+
+function LockedProgramCard({ module: m }: { module: ModuleType }) {
+  const Icon = m.icon;
+  const comingSoon = m.status === "coming_soon";
+  return (
+    <div className="ws-card ws-locked-card flex flex-col">
+      <div className="ws-locked-blur">
+        <div className="aspect-[16/10] ws-surface-2 border-b ws-border" style={{ borderBottomWidth: 1 }}>
+          <ProgramLivePreview slug={m.id} />
+        </div>
+        <div className="p-5">
+          <div className="h-9 w-9 rounded-lg ws-surface-2 flex items-center justify-center">
+            <Icon className="h-4.5 w-4.5 ws-text-muted" />
+          </div>
+          <h3 className="font-semibold ws-text mt-3">{m.name}</h3>
+          <p className="text-xs ws-text-muted mt-1 line-clamp-2">{m.short}</p>
+        </div>
+      </div>
+      <div className="ws-locked-overlay px-5">
+        <div className="flex items-center gap-2 text-xs ws-text-muted">
+          {comingSoon ? (
+            <>
+              <Sparkles className="h-3.5 w-3.5" />
+              Em breve
+            </>
+          ) : (
+            <>
+              <Lock className="h-3.5 w-3.5" />
+              Programa bloqueado
+            </>
+          )}
+        </div>
+        <p className="text-sm font-semibold ws-text text-center px-4">{m.name}</p>
+        {!comingSoon && (
+          <Link
+            to="/"
+            hash="planos"
+            className="ws-btn-primary text-xs"
+          >
+            Saiba mais
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Preview "ao vivo" do programa.
+ * Estratégia: tenta carregar /apps/<slug> dentro de um iframe leve.
+ * Hoje cada programa tem uma rota placeholder com mock visual; quando você
+ * publicar a versão real basta substituir o conteúdo de /apps/<slug>.
+ */
+function ProgramLivePreview({ slug }: { slug: string }) {
+  const src = `/apps/${slug}/preview`;
+  return (
+    <iframe
+      src={src}
+      title={`Preview ${slug}`}
+      className="w-full h-full pointer-events-none select-none"
+      style={{ border: 0, transform: "scale(0.85)", transformOrigin: "top left", width: "117.65%", height: "117.65%" }}
+      loading="lazy"
+    />
+  );
+}
+
+function PortalSkeleton() {
+  return (
+    <div className="max-w-7xl mx-auto animate-pulse">
+      <div className="h-8 w-64 ws-surface-2 rounded mb-3" />
+      <div className="h-4 w-96 ws-surface-2 rounded mb-10" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="ws-card aspect-[5/4]" />
+        ))}
+      </div>
+    </div>
   );
 }
