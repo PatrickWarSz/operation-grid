@@ -51,13 +51,16 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
       if (cancelled) return;
 
-      // @ts-expect-error tenants vem como objeto da relação
-      const tName = (profile?.tenants?.name as string | undefined) ?? "";
-      const tId = profile?.tenant_id ?? null;
+      const p = profile as unknown as {
+        tenant_id: string | null;
+        full_name: string | null;
+        tenants: { name: string } | null;
+      } | null;
+      const tName = p?.tenants?.name ?? "";
+      const tId = p?.tenant_id ?? null;
       setTenantName(tName);
       setTenantId(tId);
-      // @ts-expect-error full_name pode não existir até rodar a migration
-      setFullName((profile?.full_name as string | null) ?? null);
+      setFullName(p?.full_name ?? null);
 
       // 2) branding (tabela opcional — se não existir/sem linha, usa default)
       let initialBranding: TenantBranding = { ...DEFAULT_BRANDING };
