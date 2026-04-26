@@ -1,0 +1,133 @@
+/* ============================================================
+   WORKSPACE THEME — escopo isolado, NÃO afeta a landing.
+   Aplicado dentro de .workspace-root. Suporta data-theme=light|dark
+   e variáveis dinâmicas --ws-primary / --ws-accent (rgb triplets).
+   ============================================================ */
+
+.workspace-root {
+  --ws-primary: 14 165 233;   /* fallback (sky-500) */
+  --ws-accent: 99 102 241;    /* fallback (indigo-500) */
+
+  --ws-bg: 250 250 250;       /* zinc-50 */
+  --ws-surface: 255 255 255;
+  --ws-surface-2: 244 244 245; /* zinc-100 */
+  --ws-border: 228 228 231;   /* zinc-200 */
+  --ws-text: 24 24 27;        /* zinc-900 */
+  --ws-text-muted: 113 113 122; /* zinc-500 */
+  --ws-sidebar: 24 24 27;     /* zinc-900 */
+  --ws-sidebar-text: 244 244 245;
+  --ws-sidebar-muted: 161 161 170;
+
+  background-color: rgb(var(--ws-bg));
+  color: rgb(var(--ws-text));
+  font-family: "Inter", system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+.workspace-root[data-theme="dark"] {
+  --ws-bg: 9 9 11;             /* zinc-950 */
+  --ws-surface: 24 24 27;      /* zinc-900 */
+  --ws-surface-2: 39 39 42;    /* zinc-800 */
+  --ws-border: 39 39 42;       /* zinc-800 */
+  --ws-text: 250 250 250;
+  --ws-text-muted: 161 161 170;
+  --ws-sidebar: 0 0 0;
+  --ws-sidebar-text: 250 250 250;
+  --ws-sidebar-muted: 113 113 122;
+}
+
+/* utilitários do workspace (prefixo ws-) */
+.ws-surface { background-color: rgb(var(--ws-surface)); }
+.ws-surface-2 { background-color: rgb(var(--ws-surface-2)); }
+.ws-border { border-color: rgb(var(--ws-border)); }
+.ws-text { color: rgb(var(--ws-text)); }
+.ws-text-muted { color: rgb(var(--ws-text-muted)); }
+.ws-primary-bg { background-color: rgb(var(--ws-primary)); }
+.ws-primary-text { color: rgb(var(--ws-primary)); }
+.ws-accent-bg { background-color: rgb(var(--ws-accent)); }
+.ws-accent-text { color: rgb(var(--ws-accent)); }
+.ws-primary-ring { box-shadow: 0 0 0 1px rgb(var(--ws-primary) / 0.4); }
+
+.ws-sidebar { background-color: rgb(var(--ws-sidebar)); color: rgb(var(--ws-sidebar-text)); }
+.ws-sidebar-muted { color: rgb(var(--ws-sidebar-muted)); }
+
+.ws-card {
+  background-color: rgb(var(--ws-surface));
+  border: 1px solid rgb(var(--ws-border));
+  border-radius: 16px;
+}
+
+.ws-input {
+  background-color: rgb(var(--ws-surface));
+  border: 1px solid rgb(var(--ws-border));
+  color: rgb(var(--ws-text));
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.ws-input:focus {
+  border-color: rgb(var(--ws-primary));
+  box-shadow: 0 0 0 3px rgb(var(--ws-primary) / 0.18);
+}
+
+.ws-btn-primary {
+  background-color: rgb(var(--ws-primary));
+  color: white;
+  border-radius: 10px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: filter 0.15s, transform 0.05s;
+}
+.ws-btn-primary:hover { filter: brightness(0.92); }
+.ws-btn-primary:active { transform: translateY(1px); }
+
+.ws-btn-ghost {
+  color: rgb(var(--ws-text));
+  background-color: transparent;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 14px;
+  transition: background-color 0.15s;
+}
+.ws-btn-ghost:hover { background-color: rgb(var(--ws-surface-2)); }
+
+.ws-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  color: rgb(var(--ws-sidebar-muted));
+  transition: background-color 0.15s, color 0.15s;
+}
+.ws-nav-link:hover { background-color: rgb(255 255 255 / 0.06); color: rgb(var(--ws-sidebar-text)); }
+.ws-nav-link[data-active="true"] {
+  background-color: rgb(var(--ws-primary) / 0.18);
+  color: rgb(var(--ws-primary));
+  font-weight: 500;
+}
+
+.ws-locked-card {
+  position: relative;
+  overflow: hidden;
+}
+.ws-locked-card .ws-locked-blur {
+  filter: blur(6px) saturate(0.7);
+  opacity: 0.6;
+  pointer-events: none;
+}
+.ws-locked-card .ws-locked-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: linear-gradient(180deg, rgb(var(--ws-surface) / 0.2), rgb(var(--ws-surface) / 0.85));
+  backdrop-filter: blur(2px);
+}
