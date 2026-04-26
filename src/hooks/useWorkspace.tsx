@@ -65,8 +65,15 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       // 2) branding (tabela opcional — se não existir/sem linha, usa default)
       let initialBranding: TenantBranding = { ...DEFAULT_BRANDING };
       if (tId) {
-        // @ts-expect-error tabela criada via migration manual
-        const { data: brand } = await supabase
+        const { data: brand } = await (supabase as unknown as {
+          from: (t: string) => {
+            select: (s: string) => {
+              eq: (c: string, v: string) => {
+                maybeSingle: () => Promise<{ data: Record<string, string | null> | null }>;
+              };
+            };
+          };
+        })
           .from("tenant_branding")
           .select("logo_url, primary_color, accent_color, theme_mode, workspace_name")
           .eq("tenant_id", tId)
@@ -122,8 +129,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     const next = { ...branding, ...patch };
     setBranding(next);
     if (!tenantId) return;
-    // @ts-expect-error tabela criada via migration manual
-    await supabase.from("tenant_branding").upsert(
+    await (supabase as unknown as {
+      from: (t: string) => {
+        upsert: (v: Record<string, unknown>, o: { onConflict: string }) => Promise<unknown>;
+      };
+    }).from("tenant_branding").upsert(
       {
         tenant_id: tenantId,
         logo_url: next.logo_url,
