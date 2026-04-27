@@ -170,6 +170,43 @@ function Configuracoes() {
         </div>
       </section>
 
+      {/* Acessibilidade */}
+      <section className="ws-card p-6 mb-6">
+        <div className="flex items-start gap-3 mb-1">
+          <Accessibility className="h-5 w-5 ws-primary-text mt-0.5" />
+          <div>
+            <h2 className="font-semibold ws-text">Acessibilidade</h2>
+            <p className="text-xs ws-text-muted mt-0.5">
+              Reduza animações e transições para uma experiência mais calma.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-2">
+          {([
+            { v: "system", label: "Padrão do sistema", desc: "Segue prefers-reduced-motion" },
+            { v: "off", label: "Animações ativas", desc: "Visual completo" },
+            { v: "on", label: "Reduzir movimento", desc: "Estados estáticos" },
+          ] as const).map((opt) => {
+            const selected = motionPref === opt.v;
+            return (
+              <button
+                key={opt.v}
+                onClick={() => setMotionPref(opt.v)}
+                className="text-left rounded-xl p-3 ws-surface-2 transition"
+                style={{
+                  border: "2px solid",
+                  borderColor: selected ? "rgb(var(--ws-primary))" : "transparent",
+                }}
+              >
+                <div className="text-sm font-medium ws-text">{opt.label}</div>
+                <div className="text-[11px] ws-text-muted mt-0.5">{opt.desc}</div>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
       <div className="flex items-center justify-end gap-3">
         {savedAt && (
           <span className="inline-flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
