@@ -212,3 +212,87 @@
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
+
+/* Hero gradient animado: faz o mesh "respirar" lentamente */
+@keyframes mesh-drift {
+  0%, 100% {
+    background-position: 0% 0%, 100% 100%;
+    filter: hue-rotate(0deg);
+  }
+  50% {
+    background-position: 30% 20%, 70% 80%;
+    filter: hue-rotate(12deg);
+  }
+}
+
+.bg-mesh-animated {
+  background-image: var(--gradient-mesh);
+  background-size: 180% 180%;
+  animation: mesh-drift 18s ease-in-out infinite;
+}
+
+@keyframes blob-float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(20px, -15px) scale(1.05); }
+  66% { transform: translate(-15px, 10px) scale(0.97); }
+}
+.animate-blob {
+  animation: blob-float 14s ease-in-out infinite;
+}
+.animate-blob-slow {
+  animation: blob-float 22s ease-in-out infinite reverse;
+}
+
+/* Skeleton com shimmer real */
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  background-color: color-mix(in oklab, var(--muted) 70%, transparent);
+}
+.skeleton-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in oklab, var(--foreground) 6%, transparent) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
+/* Acessibilidade — respeita prefers-reduced-motion globalmente */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-blob,
+  .animate-blob-slow,
+  .bg-mesh-animated,
+  .skeleton-shimmer::after {
+    animation: none !important;
+  }
+}
+
+/* Override manual via classe (toggle de acessibilidade no app) */
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
+.reduce-motion .animate-blob,
+.reduce-motion .animate-blob-slow,
+.reduce-motion .bg-mesh-animated,
+.reduce-motion .skeleton-shimmer::after {
+  animation: none !important;
+}
+
