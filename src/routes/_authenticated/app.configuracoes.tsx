@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { supabase } from "@/integrations/supabase/client";
-import { Check, Upload, Loader2 } from "lucide-react";
+import { Check, Upload, Loader2, Accessibility } from "lucide-react";
+import { setReduceMotionOverride } from "@/hooks/useReducedMotion";
 
 export const Route = createFileRoute("/_authenticated/app/configuracoes")({
   head: () => ({ meta: [{ title: "Configurações — Workspace" }] }),
@@ -26,6 +27,21 @@ function Configuracoes() {
   const [uploading, setUploading] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+
+  // Estado da preferência de motion (3 estados: system | on | off)
+  const [motionPref, setMotionPref] = useState<"system" | "on" | "off">(() => {
+    if (typeof window === "undefined") return "system";
+    const v = window.localStorage.getItem("ws-reduce-motion");
+    if (v === "1") return "on";
+    if (v === "0") return "off";
+    return "system";
+  });
+
+  useEffect(() => {
+    if (motionPref === "system") setReduceMotionOverride(null);
+    else if (motionPref === "on") setReduceMotionOverride(true);
+    else setReduceMotionOverride(false);
+  }, [motionPref]);
 
   const handleSave = async () => {
     await saveBranding({
