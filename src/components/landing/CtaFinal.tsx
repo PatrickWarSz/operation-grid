@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Hexagon } from "lucide-react";
+import { Reveal } from "@/components/Reveal";
 
 export function CtaFinal() {
   return (
@@ -8,7 +9,7 @@ export function CtaFinal() {
       <div className="absolute inset-0 bg-mesh opacity-80" aria-hidden />
       <div className="absolute inset-0 grid-bg opacity-20 mask-fade-radial" aria-hidden />
 
-      <div className="relative mx-auto max-w-4xl px-6 text-center">
+      <Reveal className="relative mx-auto max-w-4xl px-6 text-center">
         <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl border border-primary/40 bg-primary/10 mb-6 shadow-glow">
           <Hexagon className="h-6 w-6 text-primary fill-primary/20" />
         </div>
@@ -33,7 +34,7 @@ export function CtaFinal() {
             </Button>
           </Link>
         </div>
-      </div>
+      </Reveal>
     </section>
   );
 }

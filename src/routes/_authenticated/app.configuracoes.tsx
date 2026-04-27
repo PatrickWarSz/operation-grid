@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { supabase } from "@/integrations/supabase/client";
-import { Check, Upload, Loader2 } from "lucide-react";
+import { Check, Upload, Loader2, Accessibility } from "lucide-react";
+import { setReduceMotionOverride } from "@/hooks/useReducedMotion";
 
 export const Route = createFileRoute("/_authenticated/app/configuracoes")({
   head: () => ({ meta: [{ title: "Configurações — Workspace" }] }),
@@ -26,6 +27,21 @@ function Configuracoes() {
   const [uploading, setUploading] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+
+  // Estado da preferência de motion (3 estados: system | on | off)
+  const [motionPref, setMotionPref] = useState<"system" | "on" | "off">(() => {
+    if (typeof window === "undefined") return "system";
+    const v = window.localStorage.getItem("ws-reduce-motion");
+    if (v === "1") return "on";
+    if (v === "0") return "off";
+    return "system";
+  });
+
+  useEffect(() => {
+    if (motionPref === "system") setReduceMotionOverride(null);
+    else if (motionPref === "on") setReduceMotionOverride(true);
+    else setReduceMotionOverride(false);
+  }, [motionPref]);
 
   const handleSave = async () => {
     await saveBranding({
@@ -151,6 +167,43 @@ function Configuracoes() {
               <span className="ml-1">{p.name}</span>
             </button>
           ))}
+        </div>
+      </section>
+
+      {/* Acessibilidade */}
+      <section className="ws-card p-6 mb-6">
+        <div className="flex items-start gap-3 mb-1">
+          <Accessibility className="h-5 w-5 ws-primary-text mt-0.5" />
+          <div>
+            <h2 className="font-semibold ws-text">Acessibilidade</h2>
+            <p className="text-xs ws-text-muted mt-0.5">
+              Reduza animações e transições para uma experiência mais calma.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-2">
+          {([
+            { v: "system", label: "Padrão do sistema", desc: "Segue prefers-reduced-motion" },
+            { v: "off", label: "Animações ativas", desc: "Visual completo" },
+            { v: "on", label: "Reduzir movimento", desc: "Estados estáticos" },
+          ] as const).map((opt) => {
+            const selected = motionPref === opt.v;
+            return (
+              <button
+                key={opt.v}
+                onClick={() => setMotionPref(opt.v)}
+                className="text-left rounded-xl p-3 ws-surface-2 transition"
+                style={{
+                  border: "2px solid",
+                  borderColor: selected ? "rgb(var(--ws-primary))" : "transparent",
+                }}
+              >
+                <div className="text-sm font-medium ws-text">{opt.label}</div>
+                <div className="text-[11px] ws-text-muted mt-0.5">{opt.desc}</div>
+              </button>
+            );
+          })}
         </div>
       </section>
 

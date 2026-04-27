@@ -5,6 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { MODULES, PLANS } from "@/lib/modules";
 import { Link } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
+import { Reveal, RevealStagger, RevealItem } from "@/components/Reveal";
 
 export function Pricing() {
   const available = MODULES.filter((m) => m.status === "available");
@@ -27,7 +28,7 @@ export function Pricing() {
     <section id="precos" className="relative py-24 border-t border-border/60">
       <div className="absolute inset-0 bg-radial opacity-60" aria-hidden />
       <div className="relative mx-auto max-w-7xl px-6">
-        <div className="text-center max-w-2xl mx-auto mb-16">
+        <Reveal className="text-center max-w-2xl mx-auto mb-16">
           <p className="text-xs font-mono uppercase tracking-widest text-primary mb-3">Planos</p>
           <h2 className="font-display text-4xl md:text-5xl font-semibold tracking-tight">
             Escolha um plano ou monte o seu.
@@ -35,64 +36,65 @@ export function Pricing() {
           <p className="mt-4 text-muted-foreground">
             Sem fidelidade. Cancele ou reconfigure quando quiser.
           </p>
-        </div>
+        </Reveal>
 
         {/* Planos prontos */}
-        <div className="grid md:grid-cols-3 gap-5 mb-16">
+        <RevealStagger className="grid md:grid-cols-3 gap-5 mb-16" stagger={0.08}>
           {PLANS.map((plan) => {
             const popular = plan.badge === "Mais popular";
             return (
-              <div
-                key={plan.id}
-                className={cn(
-                  "relative rounded-2xl border p-7 flex flex-col",
-                  popular
-                    ? "border-primary/60 bg-card-elevated shadow-elevated"
-                    : "border-border bg-card",
-                )}
-              >
-                {popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="inline-flex items-center gap-1 text-[11px] font-medium px-3 py-1 rounded-full bg-gradient-primary text-primary-foreground shadow-glow">
-                      <Sparkles className="h-3 w-3" /> {plan.badge}
-                    </span>
+              <RevealItem key={plan.id}>
+                <div
+                  className={cn(
+                    "relative rounded-2xl border p-7 flex flex-col h-full",
+                    popular
+                      ? "border-primary/60 bg-card-elevated shadow-elevated"
+                      : "border-border bg-card",
+                  )}
+                >
+                  {popular && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-medium px-3 py-1 rounded-full bg-gradient-primary text-primary-foreground shadow-glow">
+                        <Sparkles className="h-3 w-3" /> {plan.badge}
+                      </span>
+                    </div>
+                  )}
+                  <h3 className="font-display text-2xl font-semibold">{plan.name}</h3>
+                  <p className="text-sm text-muted-foreground mt-1">{plan.tagline}</p>
+
+                  <div className="mt-6 flex items-baseline gap-1">
+                    <span className="text-xs text-muted-foreground">R$</span>
+                    <span className="font-display text-5xl font-semibold tracking-tight">{plan.price}</span>
+                    <span className="text-sm text-muted-foreground">/mês</span>
                   </div>
-                )}
-                <h3 className="font-display text-2xl font-semibold">{plan.name}</h3>
-                <p className="text-sm text-muted-foreground mt-1">{plan.tagline}</p>
 
-                <div className="mt-6 flex items-baseline gap-1">
-                  <span className="text-xs text-muted-foreground">R$</span>
-                  <span className="font-display text-5xl font-semibold tracking-tight">{plan.price}</span>
-                  <span className="text-sm text-muted-foreground">/mês</span>
+                  <ul className="mt-6 space-y-2.5 flex-1">
+                    {plan.features.map((f) => (
+                      <li key={f} className="flex items-start gap-2 text-sm">
+                        <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                        <span>{f}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <Link to="/signup" className="mt-7">
+                    <Button
+                      className={cn(
+                        "w-full",
+                        popular
+                          ? "bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
+                          : "",
+                      )}
+                      variant={popular ? "default" : "outline"}
+                    >
+                      Começar com {plan.name}
+                    </Button>
+                  </Link>
                 </div>
-
-                <ul className="mt-6 space-y-2.5 flex-1">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2 text-sm">
-                      <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                      <span>{f}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <Link to="/signup" className="mt-7">
-                  <Button
-                    className={cn(
-                      "w-full",
-                      popular
-                        ? "bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
-                        : "",
-                    )}
-                    variant={popular ? "default" : "outline"}
-                  >
-                    Começar com {plan.name}
-                  </Button>
-                </Link>
-              </div>
+              </RevealItem>
             );
           })}
-        </div>
+        </RevealStagger>
 
         {/* Builder */}
         <div className="rounded-3xl border border-border-strong bg-card-elevated/60 backdrop-blur-xl p-8 md:p-10">

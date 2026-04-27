@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { MODULES } from "@/lib/modules";
 import { firstName, greetingFor } from "@/lib/workspace-theme";
 import { ArrowRight, Lock, Sparkles, Clock } from "lucide-react";
+import { RevealStagger, RevealItem } from "@/components/Reveal";
 
 export const Route = createFileRoute("/_authenticated/app")({
   head: () => ({ meta: [{ title: "Início — Workspace" }] }),
@@ -57,11 +58,13 @@ function HomePortal() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <RevealStagger className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5" stagger={0.06} amount={0.1}>
             {activeModules.map((m) => (
-              <ActiveProgramCard key={m.id} module={m} status={access.get(m.id)!} />
+              <RevealItem key={m.id}>
+                <ActiveProgramCard module={m} status={access.get(m.id)!} />
+              </RevealItem>
             ))}
-          </div>
+          </RevealStagger>
         )}
       </section>
 
@@ -73,11 +76,13 @@ function HomePortal() {
             count={lockedModules.length}
             subtitle="Expanda sua operação quando fizer sentido"
           />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <RevealStagger className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5" stagger={0.05} amount={0.1}>
             {lockedModules.map((m) => (
-              <LockedProgramCard key={m.id} module={m} />
+              <RevealItem key={m.id}>
+                <LockedProgramCard module={m} />
+              </RevealItem>
             ))}
-          </div>
+          </RevealStagger>
         </section>
       )}
     </div>
@@ -217,12 +222,27 @@ function ProgramLivePreview({ slug }: { slug: string }) {
 
 function PortalSkeleton() {
   return (
-    <div className="max-w-7xl mx-auto animate-pulse">
-      <div className="h-8 w-64 ws-surface-2 rounded mb-3" />
-      <div className="h-4 w-96 ws-surface-2 rounded mb-10" />
+    <div className="max-w-7xl mx-auto" aria-busy="true" aria-live="polite">
+      <span className="sr-only">Carregando workspace...</span>
+      <div className="h-4 w-40 skeleton-shimmer rounded mb-3" />
+      <div className="h-8 w-72 skeleton-shimmer rounded mb-3" />
+      <div className="h-4 w-96 skeleton-shimmer rounded mb-10" />
+      <div className="h-5 w-48 skeleton-shimmer rounded mb-5" />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="ws-card aspect-[5/4]" />
+          <div key={i} className="ws-card overflow-hidden">
+            <div className="aspect-[16/10] skeleton-shimmer" />
+            <div className="p-5 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded-lg skeleton-shimmer" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 w-3/4 skeleton-shimmer rounded" />
+                  <div className="h-3 w-full skeleton-shimmer rounded" />
+                </div>
+              </div>
+              <div className="h-3 w-1/3 skeleton-shimmer rounded" />
+            </div>
+          </div>
         ))}
       </div>
     </div>

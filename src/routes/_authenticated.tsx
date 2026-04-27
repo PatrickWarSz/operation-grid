@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { WorkspaceProvider, useWorkspace } from "@/hooks/useWorkspace";
 import { greetingFor, firstName } from "@/lib/workspace-theme";
+import { PageTransition } from "@/components/PageTransition";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 import {
   Home,
   LayoutGrid,
@@ -55,6 +57,7 @@ function WorkspaceShell() {
   const { branding, tenantName, fullName, setMode } = useWorkspace();
   const navigate = useNavigate();
   const location = useLocation();
+  const reducedMotion = useReducedMotion();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const display = firstName(fullName ?? user?.email ?? "");
@@ -65,7 +68,10 @@ function WorkspaceShell() {
     exact ? location.pathname === to : location.pathname.startsWith(to);
 
   return (
-    <div className="workspace-root" data-theme={branding.theme_mode}>
+    <div
+      className={"workspace-root" + (reducedMotion ? " reduce-motion" : "")}
+      data-theme={branding.theme_mode}
+    >
       <div className="flex min-h-screen">
         {/* Sidebar desktop */}
         <aside className="ws-sidebar hidden lg:flex w-60 flex-col p-4 sticky top-0 h-screen">
@@ -158,7 +164,9 @@ function WorkspaceShell() {
           </header>
 
           <main className="flex-1 px-4 sm:px-6 py-6 sm:py-8">
-            <Outlet />
+            <PageTransition>
+              <Outlet />
+            </PageTransition>
           </main>
         </div>
       </div>
