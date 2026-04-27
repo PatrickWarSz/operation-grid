@@ -3,8 +3,10 @@ import { useWorkspace } from "@/hooks/useWorkspace";
 import { useAuth } from "@/hooks/useAuth";
 import { MODULES } from "@/lib/modules";
 import { firstName, greetingFor } from "@/lib/workspace-theme";
-import { ArrowRight, Lock, Sparkles, Clock } from "lucide-react";
+import { ArrowRight, Lock, Sparkles } from "lucide-react";
 import { RevealStagger, RevealItem } from "@/components/Reveal";
+import { StartTrialButton, TrialBadge } from "@/components/workspace/TrialControls";
+import { EmptyStateRecommendations } from "@/components/workspace/EmptyStateRecommendations";
 
 export const Route = createFileRoute("/_authenticated/app")({
   head: () => ({ meta: [{ title: "Início — Workspace" }] }),
@@ -13,7 +15,7 @@ export const Route = createFileRoute("/_authenticated/app")({
 
 function HomePortal() {
   const { user } = useAuth();
-  const { loading, tenantName, fullName, branding, access } = useWorkspace();
+  const { loading, tenantName, fullName, branding, access, announcements, unreadIds } = useWorkspace();
 
   const display = firstName(fullName ?? user?.email ?? "");
   const greeting = greetingFor();
@@ -26,6 +28,13 @@ function HomePortal() {
   );
   const lockedModules = MODULES.filter(
     (m) => !["active", "trial"].includes(access.get(m.id) ?? "blocked"),
+  );
+
+  // Mapa: módulo → tem novidade não lida?
+  const moduleHasUpdate = new Set(
+    announcements
+      .filter((a) => a.module_id && unreadIds.has(a.id))
+      .map((a) => a.module_id as string)
   );
 
   return (
@@ -43,38 +52,38 @@ function HomePortal() {
         </p>
       </section>
 
-      {/* Ativos */}
-      <section className="mb-12">
-        <SectionHeading
-          title="Seus programas"
-          count={activeModules.length}
-          subtitle="Programas ativos da sua operação"
-        />
+      {/* Estado vazio inteligente */}
+      {activeModules.length === 0 && (
+        <section className="mb-12">
+          <EmptyStateRecommendations />
+        </section>
+      )}
 
-        {activeModules.length === 0 ? (
-          <div className="ws-card p-10 text-center">
-            <p className="text-sm ws-text-muted">
-              Nenhum programa ativo ainda. Veja o catálogo abaixo.
-            </p>
-          </div>
-        ) : (
+      {/* Ativos */}
+      {activeModules.length > 0 && (
+        <section className="mb-12">
+          <SectionHeading
+            title="Seus programas"
+            count={activeModules.length}
+            subtitle="Programas ativos da sua operação"
+          />
           <RevealStagger className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5" stagger={0.06} amount={0.1}>
             {activeModules.map((m) => (
               <RevealItem key={m.id}>
-                <ActiveProgramCard module={m} status={access.get(m.id)!} />
+                <ActiveProgramCard module={m} hasUpdate={moduleHasUpdate.has(m.id)} />
               </RevealItem>
             ))}
           </RevealStagger>
-        )}
-      </section>
+        </section>
+      )}
 
-      {/* Bloqueados / catálogo inline */}
+      {/* Bloqueados */}
       {lockedModules.length > 0 && (
         <section>
           <SectionHeading
             title="Disponíveis para ativar"
             count={lockedModules.length}
-            subtitle="Expanda sua operação quando fizer sentido"
+            subtitle="Teste 7 dias grátis ou faça upgrade quando fizer sentido"
           />
           <RevealStagger className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5" stagger={0.05} amount={0.1}>
             {lockedModules.map((m) => (
@@ -90,14 +99,8 @@ function HomePortal() {
 }
 
 function SectionHeading({
-  title,
-  count,
-  subtitle,
-}: {
-  title: string;
-  count: number;
-  subtitle: string;
-}) {
+  title, count, subtitle,
+}: { title: string; count: number; subtitle: string; }) {
   return (
     <div className="flex items-end justify-between mb-5">
       <div>
@@ -115,21 +118,24 @@ function SectionHeading({
 
 type ModuleType = (typeof MODULES)[number];
 
-function ActiveProgramCard({ module: m, status }: { module: ModuleType; status: string }) {
+function ActiveProgramCard({ module: m, hasUpdate }: { module: ModuleType; hasUpdate: boolean }) {
   const Icon = m.icon;
   return (
     <Link
       to="/app/programas/$slug"
       params={{ slug: m.id }}
-      className="ws-card group overflow-hidden hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 flex flex-col"
+      className="ws-card group overflow-hidden hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 flex flex-col relative"
     >
-      {/* Preview live (iframe-ready) */}
       <div className="aspect-[16/10] ws-surface-2 relative overflow-hidden border-b ws-border" style={{ borderBottomWidth: 1 }}>
         <ProgramLivePreview slug={m.id} />
-        {status === "trial" && (
-          <span className="absolute top-3 right-3 inline-flex items-center gap-1 rounded-full bg-amber-500/90 text-white text-[10px] font-medium px-2 py-1">
-            <Clock className="h-3 w-3" />
-            trial
+        <TrialBadge moduleId={m.id} />
+        {hasUpdate && (
+          <span
+            className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full text-white text-[10px] font-bold px-2 py-1 shadow-md"
+            style={{ backgroundColor: "rgb(var(--ws-primary))" }}
+          >
+            <Sparkles className="h-3 w-3" />
+            Novo
           </span>
         )}
       </div>
@@ -137,7 +143,7 @@ function ActiveProgramCard({ module: m, status }: { module: ModuleType; status: 
       <div className="p-5 flex-1 flex flex-col">
         <div className="flex items-start gap-3">
           <div className="h-9 w-9 rounded-lg flex items-center justify-center ws-primary-bg text-white shrink-0">
-            <Icon className="h-4.5 w-4.5" />
+            <Icon className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
             <h3 className="font-semibold ws-text truncate">{m.name}</h3>
@@ -166,7 +172,7 @@ function LockedProgramCard({ module: m }: { module: ModuleType }) {
         </div>
         <div className="p-5">
           <div className="h-9 w-9 rounded-lg ws-surface-2 flex items-center justify-center">
-            <Icon className="h-4.5 w-4.5 ws-text-muted" />
+            <Icon className="h-4 w-4 ws-text-muted" />
           </div>
           <h3 className="font-semibold ws-text mt-3">{m.name}</h3>
           <p className="text-xs ws-text-muted mt-1 line-clamp-2">{m.short}</p>
@@ -174,39 +180,15 @@ function LockedProgramCard({ module: m }: { module: ModuleType }) {
       </div>
       <div className="ws-locked-overlay px-5">
         <div className="flex items-center gap-2 text-xs ws-text-muted">
-          {comingSoon ? (
-            <>
-              <Sparkles className="h-3.5 w-3.5" />
-              Em breve
-            </>
-          ) : (
-            <>
-              <Lock className="h-3.5 w-3.5" />
-              Programa bloqueado
-            </>
-          )}
+          {comingSoon ? (<><Sparkles className="h-3.5 w-3.5" /> Em breve</>) : (<><Lock className="h-3.5 w-3.5" /> Programa bloqueado</>)}
         </div>
         <p className="text-sm font-semibold ws-text text-center px-4">{m.name}</p>
-        {!comingSoon && (
-          <Link
-            to="/"
-            hash="planos"
-            className="ws-btn-primary text-xs"
-          >
-            Saiba mais
-          </Link>
-        )}
+        {!comingSoon && <StartTrialButton module={m} />}
       </div>
     </div>
   );
 }
 
-/**
- * Preview "ao vivo" do programa.
- * Estratégia: tenta carregar /apps/<slug> dentro de um iframe leve.
- * Hoje cada programa tem uma rota placeholder com mock visual; quando você
- * publicar a versão real basta substituir o conteúdo de /apps/<slug>.
- */
 function ProgramLivePreview({ slug }: { slug: string }) {
   const src = `/apps/${slug}/preview`;
   return (
