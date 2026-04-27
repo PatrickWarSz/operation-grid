@@ -5,6 +5,8 @@ import { WorkspaceProvider, useWorkspace } from "@/hooks/useWorkspace";
 import { greetingFor, firstName } from "@/lib/workspace-theme";
 import { PageTransition } from "@/components/PageTransition";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { OnboardingWizard } from "@/components/workspace/OnboardingWizard";
+import { NotificationBell } from "@/components/workspace/NotificationBell";
 import {
   Home,
   LayoutGrid,
@@ -15,6 +17,8 @@ import {
   Moon,
   Menu,
   X,
+  Sparkles,
+  ShieldCheck,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -48,13 +52,14 @@ function AuthenticatedLayout() {
 const NAV = [
   { to: "/app", label: "Início", icon: Home, exact: true },
   { to: "/app/programas", label: "Programas", icon: LayoutGrid, exact: false },
+  { to: "/app/novidades", label: "Novidades", icon: Sparkles, exact: false, badge: "unread" as const },
   { to: "/app/catalogo", label: "Catálogo", icon: Store, exact: false },
   { to: "/app/configuracoes", label: "Configurações", icon: Settings, exact: false },
 ] as const;
 
 function WorkspaceShell() {
   const { user, signOut } = useAuth();
-  const { branding, tenantName, fullName, setMode } = useWorkspace();
+  const { branding, tenantName, fullName, setMode, isAdmin, unreadIds } = useWorkspace();
   const navigate = useNavigate();
   const location = useLocation();
   const reducedMotion = useReducedMotion();
@@ -72,6 +77,7 @@ function WorkspaceShell() {
       className={"workspace-root" + (reducedMotion ? " reduce-motion" : "")}
       data-theme={branding.theme_mode}
     >
+      <OnboardingWizard />
       <div className="flex min-h-screen">
         {/* Sidebar desktop */}
         <aside className="ws-sidebar hidden lg:flex w-60 flex-col p-4 sticky top-0 h-screen">
@@ -79,6 +85,8 @@ function WorkspaceShell() {
             workspaceLabel={workspaceLabel}
             logo={branding.logo_url}
             isActive={isActive}
+            unreadCount={unreadIds.size}
+            isAdmin={isAdmin}
             onSignOut={async () => {
               await signOut();
               navigate({ to: "/" });
@@ -104,6 +112,8 @@ function WorkspaceShell() {
                 workspaceLabel={workspaceLabel}
                 logo={branding.logo_url}
                 isActive={isActive}
+                unreadCount={unreadIds.size}
+                isAdmin={isAdmin}
                 onClick={() => setMobileOpen(false)}
                 onSignOut={async () => {
                   await signOut();
@@ -136,7 +146,8 @@ function WorkspaceShell() {
                   </h1>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
+                <NotificationBell />
                 <button
                   onClick={() => setMode(branding.theme_mode === "light" ? "dark" : "light")}
                   className="ws-btn-ghost p-2"
@@ -149,7 +160,7 @@ function WorkspaceShell() {
                     <Sun className="h-4 w-4" />
                   )}
                 </button>
-                <div className="hidden sm:flex items-center gap-2 pl-2 border-l ws-border" style={{ borderLeftWidth: 1 }}>
+                <div className="hidden sm:flex items-center gap-2 pl-3 ml-1 border-l ws-border" style={{ borderLeftWidth: 1 }}>
                   <div
                     className="h-8 w-8 rounded-full flex items-center justify-center text-white text-xs font-semibold ws-primary-bg"
                   >
@@ -178,11 +189,13 @@ interface SidebarContentProps {
   workspaceLabel: string;
   logo: string | null;
   isActive: (to: string, exact: boolean) => boolean;
+  unreadCount: number;
+  isAdmin: boolean;
   onClick?: () => void;
   onSignOut: () => Promise<void> | void;
 }
 
-function SidebarContent({ workspaceLabel, logo, isActive, onClick, onSignOut }: SidebarContentProps) {
+function SidebarContent({ workspaceLabel, logo, isActive, unreadCount, isAdmin, onClick, onSignOut }: SidebarContentProps) {
   return (
     <>
       <div className="flex items-center gap-3 px-2 mt-2 mb-6">
@@ -209,6 +222,7 @@ function SidebarContent({ workspaceLabel, logo, isActive, onClick, onSignOut }: 
         {NAV.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.to, item.exact);
+          const showBadge = "badge" in item && item.badge === "unread" && unreadCount > 0;
           return (
             <Link
               key={item.to}
@@ -218,10 +232,35 @@ function SidebarContent({ workspaceLabel, logo, isActive, onClick, onSignOut }: 
               data-active={active}
             >
               <Icon className="h-4 w-4" />
-              <span>{item.label}</span>
+              <span className="flex-1">{item.label}</span>
+              {showBadge && (
+                <span
+                  className="text-[10px] font-bold min-w-[18px] h-[18px] px-1 rounded-full text-white flex items-center justify-center"
+                  style={{ backgroundColor: "rgb(var(--ws-primary))" }}
+                >
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
             </Link>
           );
         })}
+
+        {isAdmin && (
+          <>
+            <div className="pt-4 pb-1.5 px-3 text-[10px] uppercase tracking-widest ws-sidebar-muted">
+              Admin
+            </div>
+            <Link
+              to="/app/admin/novidades"
+              onClick={onClick}
+              className="ws-nav-link"
+              data-active={isActive("/app/admin/novidades", false)}
+            >
+              <ShieldCheck className="h-4 w-4" />
+              <span>Novidades</span>
+            </Link>
+          </>
+        )}
       </nav>
 
       <button
