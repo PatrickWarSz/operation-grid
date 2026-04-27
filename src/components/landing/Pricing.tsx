@@ -5,6 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { MODULES, PLANS } from "@/lib/modules";
 import { Link } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
+import { Reveal, RevealStagger, RevealItem } from "@/components/Reveal";
 
 export function Pricing() {
   const available = MODULES.filter((m) => m.status === "available");
@@ -38,7 +39,7 @@ export function Pricing() {
         </div>
 
         {/* Planos prontos */}
-        <div className="grid md:grid-cols-3 gap-5 mb-16">
+        <RevealStagger className="grid md:grid-cols-3 gap-5 mb-16" stagger={0.08}>
           {PLANS.map((plan) => {
             const popular = plan.badge === "Mais popular";
             return (

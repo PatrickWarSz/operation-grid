@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MODULES } from "@/lib/modules";
 import { Check, PlayCircle, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Reveal } from "@/components/Reveal";
 
 export function Showcase() {
   const [activeId, setActiveId] = useState(MODULES[0].id);
@@ -13,7 +14,7 @@ export function Showcase() {
     <section id="showcase" className="relative py-24 border-t border-border/60">
       <div className="absolute inset-0 bg-mesh opacity-30" aria-hidden />
       <div className="relative mx-auto max-w-7xl px-6">
-        <div className="text-center max-w-2xl mx-auto mb-16">
+        <Reveal className="text-center max-w-2xl mx-auto mb-16">
           <p className="text-xs font-mono uppercase tracking-widest text-primary mb-3">Em ação</p>
           <h2 className="font-display text-4xl md:text-5xl font-semibold tracking-tight">
             Veja cada programa funcionando.
@@ -21,7 +22,7 @@ export function Showcase() {
           <p className="mt-4 text-muted-foreground">
             Clique em um programa à esquerda. A demonstração é exibida ao lado, com play automático.
           </p>
-        </div>
+        </Reveal>
 
         <div className="grid lg:grid-cols-[320px_1fr] gap-6">
           {/* Lista lateral */}
