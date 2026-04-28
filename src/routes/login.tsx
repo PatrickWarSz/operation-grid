@@ -92,11 +92,19 @@ function LoginPage() {
 
       {/* card centralizado */}
       <div className="relative z-10 w-full max-w-md">
+        {intentModule && (
+          <div className="mb-4 rounded-xl border border-primary/40 bg-primary/10 p-3 flex items-center gap-2.5 backdrop-blur-xl">
+            <Sparkles className="h-4 w-4 text-primary shrink-0" />
+            <p className="text-xs text-foreground">
+              Entre para acessar <strong>{intentModule.name}</strong>. Já é nosso cliente? Sua conta Hub libera o programa.
+            </p>
+          </div>
+        )}
         <div className="rounded-2xl border border-border-strong bg-card-elevated/80 backdrop-blur-2xl shadow-elevated p-8">
           <div className="text-center mb-7">
             <h1 className="font-display text-3xl font-semibold tracking-tight">Entrar</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Acesse o Hub e centralize sua operação.
+              {intentModule ? `Acesse sua conta para ativar ${intentModule.name}.` : "Acesse o Hub e centralize sua operação."}
             </p>
           </div>
 
@@ -182,7 +190,11 @@ function LoginPage() {
 
         <p className="mt-6 text-sm text-center text-muted-foreground">
           Ainda não tem conta?{" "}
-          <Link to="/signup" className="text-primary font-medium hover:underline">
+          <Link
+            to="/signup"
+            search={intentModule ? { intent: intentModule.id, redirect: redirectTarget } : undefined}
+            className="text-primary font-medium hover:underline"
+          >
             Criar conta gratuita
           </Link>
         </p>
