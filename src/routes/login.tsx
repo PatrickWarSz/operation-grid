@@ -3,11 +3,18 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, ArrowRight, ArrowLeft, Hexagon, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, ArrowLeft, Hexagon, AlertCircle, Sparkles } from "lucide-react";
 import { AuthBackdrop } from "@/components/auth/AuthBackdrop";
 import { supabase } from "@/integrations/supabase/client";
+import { MODULES } from "@/lib/modules";
+
+type LoginSearch = { intent?: string; redirect?: string };
 
 export const Route = createFileRoute("/login")({
+  validateSearch: (search: Record<string, unknown>): LoginSearch => ({
+    intent: typeof search.intent === "string" ? search.intent : undefined,
+    redirect: typeof search.redirect === "string" ? search.redirect : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Entrar — Hub Nexus" },
@@ -19,11 +26,21 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const navigate = useNavigate();
+  const search = Route.useSearch();
+  const intentModule = search.intent ? MODULES.find((m) => m.id === search.intent) : undefined;
+  const redirectTarget = search.redirect
+    ?? (intentModule ? `/app/programas/${intentModule.id}` : "/app");
+
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  const buildTarget = () =>
+    `${redirectTarget}${
+      intentModule ? (redirectTarget.includes("?") ? "&" : "?") + "intent=" + intentModule.id : ""
+    }`;
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,14 +56,15 @@ function LoginPage() {
       );
       return;
     }
-    navigate({ to: "/app" });
+    // hard nav garante que o workspace leia ?intent= do URL
+    window.location.href = buildTarget();
   };
 
   const onGoogle = async () => {
     setError(null);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/app` },
+      options: { redirectTo: `${window.location.origin}${buildTarget()}` },
     });
     if (error) setError(error.message);
   };
@@ -74,11 +92,19 @@ function LoginPage() {
 
       {/* card centralizado */}
       <div className="relative z-10 w-full max-w-md">
+        {intentModule && (
+          <div className="mb-4 rounded-xl border border-primary/40 bg-primary/10 p-3 flex items-center gap-2.5 backdrop-blur-xl">
+            <Sparkles className="h-4 w-4 text-primary shrink-0" />
+            <p className="text-xs text-foreground">
+              Entre para acessar <strong>{intentModule.name}</strong>. Já é nosso cliente? Sua conta Hub libera o programa.
+            </p>
+          </div>
+        )}
         <div className="rounded-2xl border border-border-strong bg-card-elevated/80 backdrop-blur-2xl shadow-elevated p-8">
           <div className="text-center mb-7">
             <h1 className="font-display text-3xl font-semibold tracking-tight">Entrar</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Acesse o Hub e centralize sua operação.
+              {intentModule ? `Acesse sua conta para ativar ${intentModule.name}.` : "Acesse o Hub e centralize sua operação."}
             </p>
           </div>
 
@@ -164,7 +190,11 @@ function LoginPage() {
 
         <p className="mt-6 text-sm text-center text-muted-foreground">
           Ainda não tem conta?{" "}
-          <Link to="/signup" className="text-primary font-medium hover:underline">
+          <Link
+            to="/signup"
+            search={intentModule ? { intent: intentModule.id, redirect: redirectTarget } : undefined}
+            className="text-primary font-medium hover:underline"
+          >
             Criar conta gratuita
           </Link>
         </p>

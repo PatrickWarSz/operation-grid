@@ -1,13 +1,20 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, ArrowRight, ArrowLeft, Hexagon, Check, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, ArrowLeft, Hexagon, Check, AlertCircle, CheckCircle2, Sparkles } from "lucide-react";
 import { AuthBackdrop } from "@/components/auth/AuthBackdrop";
 import { supabase } from "@/integrations/supabase/client";
+import { MODULES } from "@/lib/modules";
+
+type SignupSearch = { intent?: string; redirect?: string };
 
 export const Route = createFileRoute("/signup")({
+  validateSearch: (search: Record<string, unknown>): SignupSearch => ({
+    intent: typeof search.intent === "string" ? search.intent : undefined,
+    redirect: typeof search.redirect === "string" ? search.redirect : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Criar conta — Hub Nexus" },
@@ -24,7 +31,11 @@ const PERKS = [
 ];
 
 function SignupPage() {
-  const navigate = useNavigate();
+  const search = Route.useSearch();
+  const intentModule = search.intent ? MODULES.find((m) => m.id === search.intent) : undefined;
+  const redirectTarget = search.redirect
+    ?? (intentModule ? `/app/programas/${intentModule.id}` : "/app");
+
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,12 +50,15 @@ function SignupPage() {
     setError(null);
     setInfo(null);
     setLoading(true);
+    const emailRedirect = `${window.location.origin}${redirectTarget}${
+      intentModule ? (redirectTarget.includes("?") ? "&" : "?") + "intent=" + intentModule.id : ""
+    }`;
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/app`,
-        data: { full_name: name, company_name: company },
+        emailRedirectTo: emailRedirect,
+        data: { full_name: name, company_name: company, signup_intent: intentModule?.id ?? null },
       },
     });
     setLoading(false);
@@ -53,7 +67,10 @@ function SignupPage() {
       return;
     }
     if (data.session) {
-      navigate({ to: "/app" });
+      // sessão imediata: workspace lerá ?intent= e iniciará trial
+      window.location.href = `${redirectTarget}${
+        intentModule ? (redirectTarget.includes("?") ? "&" : "?") + "intent=" + intentModule.id : ""
+      }`;
     } else {
       setInfo("Conta criada! Verifique seu e-mail para confirmar e poder entrar.");
     }
@@ -61,9 +78,12 @@ function SignupPage() {
 
   const onGoogle = async () => {
     setError(null);
+    const target = `${window.location.origin}${redirectTarget}${
+      intentModule ? (redirectTarget.includes("?") ? "&" : "?") + "intent=" + intentModule.id : ""
+    }`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/app` },
+      options: { redirectTo: target },
     });
     if (error) setError(error.message);
   };
@@ -89,11 +109,22 @@ function SignupPage() {
       </div>
 
       <div className="relative z-10 w-full max-w-md">
+        {intentModule && (
+          <div className="mb-4 rounded-xl border border-primary/40 bg-primary/10 p-3 flex items-center gap-2.5 backdrop-blur-xl">
+            <Sparkles className="h-4 w-4 text-primary shrink-0" />
+            <p className="text-xs text-foreground">
+              Você está criando sua conta para acessar <strong>{intentModule.name}</strong> com 7 dias grátis.
+              Sua conta Hub Nexus dá acesso ao programa e a todo o ecossistema.
+            </p>
+          </div>
+        )}
         <div className="rounded-2xl border border-border-strong bg-card-elevated/80 backdrop-blur-2xl shadow-elevated p-8">
           <div className="text-center mb-7">
             <h1 className="font-display text-3xl font-semibold tracking-tight">Criar conta</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Teste o Hub Nexus por 14 dias. Sem cartão de crédito.
+              {intentModule
+                ? `Comece a usar ${intentModule.name} em segundos. 7 dias grátis.`
+                : "Teste o Hub Nexus por 14 dias. Sem cartão de crédito."}
             </p>
           </div>
 
@@ -165,7 +196,7 @@ function SignupPage() {
               className="w-full bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
               size="lg"
             >
-              {loading ? "Criando conta..." : "Iniciar teste de 14 dias"}
+              {loading ? "Criando conta..." : intentModule ? `Começar trial de ${intentModule.name}` : "Iniciar teste de 14 dias"}
               {!loading && <ArrowRight className="ml-1 h-4 w-4" />}
             </Button>
 
@@ -198,7 +229,11 @@ function SignupPage() {
 
         <p className="mt-6 text-sm text-center text-muted-foreground">
           Já tem conta?{" "}
-          <Link to="/login" className="text-primary font-medium hover:underline">
+          <Link
+            to="/login"
+            search={intentModule ? { intent: intentModule.id, redirect: redirectTarget } : undefined}
+            className="text-primary font-medium hover:underline"
+          >
             Entrar
           </Link>
         </p>
