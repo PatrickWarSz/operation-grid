@@ -26,11 +26,21 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const navigate = useNavigate();
+  const search = Route.useSearch();
+  const intentModule = search.intent ? MODULES.find((m) => m.id === search.intent) : undefined;
+  const redirectTarget = search.redirect
+    ?? (intentModule ? `/app/programas/${intentModule.id}` : "/app");
+
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  const buildTarget = () =>
+    `${redirectTarget}${
+      intentModule ? (redirectTarget.includes("?") ? "&" : "?") + "intent=" + intentModule.id : ""
+    }`;
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,14 +56,15 @@ function LoginPage() {
       );
       return;
     }
-    navigate({ to: "/app" });
+    // hard nav garante que o workspace leia ?intent= do URL
+    window.location.href = buildTarget();
   };
 
   const onGoogle = async () => {
     setError(null);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/app` },
+      options: { redirectTo: `${window.location.origin}${buildTarget()}` },
     });
     if (error) setError(error.message);
   };
