@@ -3,11 +3,18 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, ArrowRight, ArrowLeft, Hexagon, Check, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, ArrowLeft, Hexagon, Check, AlertCircle, CheckCircle2, Sparkles } from "lucide-react";
 import { AuthBackdrop } from "@/components/auth/AuthBackdrop";
 import { supabase } from "@/integrations/supabase/client";
+import { MODULES } from "@/lib/modules";
+
+type SignupSearch = { intent?: string; redirect?: string };
 
 export const Route = createFileRoute("/signup")({
+  validateSearch: (search: Record<string, unknown>): SignupSearch => ({
+    intent: typeof search.intent === "string" ? search.intent : undefined,
+    redirect: typeof search.redirect === "string" ? search.redirect : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Criar conta — Hub Nexus" },
