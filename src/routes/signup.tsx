@@ -110,11 +110,22 @@ function SignupPage() {
       </div>
 
       <div className="relative z-10 w-full max-w-md">
+        {intentModule && (
+          <div className="mb-4 rounded-xl border border-primary/40 bg-primary/10 p-3 flex items-center gap-2.5 backdrop-blur-xl">
+            <Sparkles className="h-4 w-4 text-primary shrink-0" />
+            <p className="text-xs text-foreground">
+              Você está criando sua conta para acessar <strong>{intentModule.name}</strong> com 7 dias grátis.
+              Sua conta Hub Nexus dá acesso ao programa e a todo o ecossistema.
+            </p>
+          </div>
+        )}
         <div className="rounded-2xl border border-border-strong bg-card-elevated/80 backdrop-blur-2xl shadow-elevated p-8">
           <div className="text-center mb-7">
             <h1 className="font-display text-3xl font-semibold tracking-tight">Criar conta</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Teste o Hub Nexus por 14 dias. Sem cartão de crédito.
+              {intentModule
+                ? `Comece a usar ${intentModule.name} em segundos. 7 dias grátis.`
+                : "Teste o Hub Nexus por 14 dias. Sem cartão de crédito."}
             </p>
           </div>
 
