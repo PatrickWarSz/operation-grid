@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +31,6 @@ const PERKS = [
 ];
 
 function SignupPage() {
-  const navigate = useNavigate();
   const search = Route.useSearch();
   const intentModule = search.intent ? MODULES.find((m) => m.id === search.intent) : undefined;
   const redirectTarget = search.redirect
