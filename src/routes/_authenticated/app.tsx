@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useRef } from "react";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { useAuth } from "@/hooks/useAuth";
 import { MODULES } from "@/lib/modules";
@@ -8,14 +9,43 @@ import { RevealStagger, RevealItem } from "@/components/Reveal";
 import { StartTrialButton, TrialBadge } from "@/components/workspace/TrialControls";
 import { EmptyStateRecommendations } from "@/components/workspace/EmptyStateRecommendations";
 
+type AppSearch = { intent?: string };
+
 export const Route = createFileRoute("/_authenticated/app")({
+  validateSearch: (search: Record<string, unknown>): AppSearch => ({
+    intent: typeof search.intent === "string" ? search.intent : undefined,
+  }),
   head: () => ({ meta: [{ title: "Início — Workspace" }] }),
   component: HomePortal,
 });
 
 function HomePortal() {
   const { user } = useAuth();
-  const { loading, tenantName, fullName, branding, access, announcements, unreadIds } = useWorkspace();
+  const { loading, tenantName, fullName, branding, access, announcements, unreadIds, startTrial } = useWorkspace();
+  const search = Route.useSearch();
+  const navigate = useNavigate();
+  const handledIntent = useRef<string | null>(null);
+
+  // Auto-iniciar trial e redirecionar quando vem com ?intent=
+  useEffect(() => {
+    if (loading) return;
+    const intent = search.intent;
+    if (!intent || handledIntent.current === intent) return;
+    const mod = MODULES.find((m) => m.id === intent);
+    if (!mod || mod.status === "coming_soon") return;
+    handledIntent.current = intent;
+
+    const current = access.get(intent);
+    const goToProgram = () =>
+      navigate({ to: "/app/programas/$slug", params: { slug: intent }, replace: true });
+
+    if (current === "active" || current === "trial") {
+      goToProgram();
+      return;
+    }
+    // inicia trial silenciosamente; ignora erro (ex: já iniciado antes)
+    startTrial(intent).catch(() => {}).finally(goToProgram);
+  }, [loading, search.intent, access, startTrial, navigate]);
 
   const display = firstName(fullName ?? user?.email ?? "");
   const greeting = greetingFor();
