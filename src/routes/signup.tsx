@@ -32,6 +32,11 @@ const PERKS = [
 
 function SignupPage() {
   const navigate = useNavigate();
+  const search = Route.useSearch();
+  const intentModule = search.intent ? MODULES.find((m) => m.id === search.intent) : undefined;
+  const redirectTarget = search.redirect
+    ?? (intentModule ? `/app/programas/${intentModule.id}` : "/app");
+
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,12 +51,15 @@ function SignupPage() {
     setError(null);
     setInfo(null);
     setLoading(true);
+    const emailRedirect = `${window.location.origin}${redirectTarget}${
+      intentModule ? (redirectTarget.includes("?") ? "&" : "?") + "intent=" + intentModule.id : ""
+    }`;
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/app`,
-        data: { full_name: name, company_name: company },
+        emailRedirectTo: emailRedirect,
+        data: { full_name: name, company_name: company, signup_intent: intentModule?.id ?? null },
       },
     });
     setLoading(false);
@@ -60,7 +68,10 @@ function SignupPage() {
       return;
     }
     if (data.session) {
-      navigate({ to: "/app" });
+      // sessão imediata: workspace lerá ?intent= e iniciará trial
+      window.location.href = `${redirectTarget}${
+        intentModule ? (redirectTarget.includes("?") ? "&" : "?") + "intent=" + intentModule.id : ""
+      }`;
     } else {
       setInfo("Conta criada! Verifique seu e-mail para confirmar e poder entrar.");
     }
@@ -68,9 +79,12 @@ function SignupPage() {
 
   const onGoogle = async () => {
     setError(null);
+    const target = `${window.location.origin}${redirectTarget}${
+      intentModule ? (redirectTarget.includes("?") ? "&" : "?") + "intent=" + intentModule.id : ""
+    }`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/app` },
+      options: { redirectTo: target },
     });
     if (error) setError(error.message);
   };
