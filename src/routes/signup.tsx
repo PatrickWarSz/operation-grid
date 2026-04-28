@@ -197,7 +197,7 @@ function SignupPage() {
               className="w-full bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
               size="lg"
             >
-              {loading ? "Criando conta..." : "Iniciar teste de 14 dias"}
+              {loading ? "Criando conta..." : intentModule ? `Começar trial de ${intentModule.name}` : "Iniciar teste de 14 dias"}
               {!loading && <ArrowRight className="ml-1 h-4 w-4" />}
             </Button>
 
@@ -230,7 +230,11 @@ function SignupPage() {
 
         <p className="mt-6 text-sm text-center text-muted-foreground">
           Já tem conta?{" "}
-          <Link to="/login" className="text-primary font-medium hover:underline">
+          <Link
+            to="/login"
+            search={intentModule ? { intent: intentModule.id, redirect: redirectTarget } : undefined}
+            className="text-primary font-medium hover:underline"
+          >
             Entrar
           </Link>
         </p>
