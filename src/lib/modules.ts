@@ -155,9 +155,11 @@ export const PLANS = [
     price: 199,
     badge: null as string | null,
     includes: ["devolucoes"],
+    maxUnits: 1,
     features: [
       "1 programa à escolha",
       "Até 3 usuários",
+      "1 filial (matriz)",
       "Suporte por e-mail",
       "Atualizações globais",
     ],
@@ -169,9 +171,11 @@ export const PLANS = [
     price: 549,
     badge: "Mais popular",
     includes: ["devolucoes", "estoque", "financeiro-empresa"],
+    maxUnits: 3,
     features: [
       "3 programas inclusos",
       "Até 10 usuários",
+      "Até 3 filiais",
       "White-label básico",
       "Suporte prioritário",
       "Feature flags por solicitação",
@@ -184,9 +188,11 @@ export const PLANS = [
     price: 1290,
     badge: null,
     includes: MODULES.filter((m) => m.status === "available").map((m) => m.id),
+    maxUnits: null as number | null, // ilimitado
     features: [
       "Todos os programas disponíveis",
       "Usuários ilimitados",
+      "Filiais ilimitadas",
       "White-label completo",
       "SLA dedicado",
       "Customizações por cliente",
