@@ -4,10 +4,12 @@ import { useWorkspace } from "@/hooks/useWorkspace";
 import { useAuth } from "@/hooks/useAuth";
 import { MODULES } from "@/lib/modules";
 import { firstName, greetingFor } from "@/lib/workspace-theme";
-import { ArrowRight, Lock, Sparkles } from "lucide-react";
+import { ArrowRight, Lock, Sparkles, ExternalLink } from "lucide-react";
 import { RevealStagger, RevealItem } from "@/components/Reveal";
 import { StartTrialButton, TrialBadge } from "@/components/workspace/TrialControls";
 import { EmptyStateRecommendations } from "@/components/workspace/EmptyStateRecommendations";
+import { supabase } from "@/integrations/supabase/client";
+import { buildSatelliteUrl, isAllowedSatelliteUrl } from "@/lib/satellite-handoff";
 
 type AppSearch = { intent?: string };
 
