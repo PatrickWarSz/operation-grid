@@ -23,6 +23,7 @@ import { Route as AuthenticatedAppConfiguracoesRouteImport } from './routes/_aut
 import { Route as AuthenticatedAppCatalogoRouteImport } from './routes/_authenticated/app.catalogo'
 import { Route as AuthenticatedAdminNovidadesRouteImport } from './routes/_authenticated/admin.novidades'
 import { Route as AuthenticatedAppProgramasSlugRouteImport } from './routes/_authenticated/app.programas.$slug'
+import { Route as AuthenticatedAppConfiguracoesFiliaisRouteImport } from './routes/_authenticated/app.configuracoes.filiais'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -99,6 +100,12 @@ const AuthenticatedAppProgramasSlugRoute =
     path: '/$slug',
     getParentRoute: () => AuthenticatedAppProgramasRoute,
   } as any)
+const AuthenticatedAppConfiguracoesFiliaisRoute =
+  AuthenticatedAppConfiguracoesFiliaisRouteImport.update({
+    id: '/filiais',
+    path: '/filiais',
+    getParentRoute: () => AuthenticatedAppConfiguracoesRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -109,10 +116,11 @@ export interface FileRoutesByFullPath {
   '/programas/$slug': typeof ProgramasSlugRoute
   '/admin/novidades': typeof AuthenticatedAdminNovidadesRoute
   '/app/catalogo': typeof AuthenticatedAppCatalogoRoute
-  '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
+  '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRouteWithChildren
   '/app/novidades': typeof AuthenticatedAppNovidadesRoute
   '/app/programas': typeof AuthenticatedAppProgramasRouteWithChildren
   '/apps/$slug/preview': typeof AppsSlugPreviewRoute
+  '/app/configuracoes/filiais': typeof AuthenticatedAppConfiguracoesFiliaisRoute
   '/app/programas/$slug': typeof AuthenticatedAppProgramasSlugRoute
 }
 export interface FileRoutesByTo {
@@ -124,10 +132,11 @@ export interface FileRoutesByTo {
   '/programas/$slug': typeof ProgramasSlugRoute
   '/admin/novidades': typeof AuthenticatedAdminNovidadesRoute
   '/app/catalogo': typeof AuthenticatedAppCatalogoRoute
-  '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
+  '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRouteWithChildren
   '/app/novidades': typeof AuthenticatedAppNovidadesRoute
   '/app/programas': typeof AuthenticatedAppProgramasRouteWithChildren
   '/apps/$slug/preview': typeof AppsSlugPreviewRoute
+  '/app/configuracoes/filiais': typeof AuthenticatedAppConfiguracoesFiliaisRoute
   '/app/programas/$slug': typeof AuthenticatedAppProgramasSlugRoute
 }
 export interface FileRoutesById {
@@ -141,10 +150,11 @@ export interface FileRoutesById {
   '/programas/$slug': typeof ProgramasSlugRoute
   '/_authenticated/admin/novidades': typeof AuthenticatedAdminNovidadesRoute
   '/_authenticated/app/catalogo': typeof AuthenticatedAppCatalogoRoute
-  '/_authenticated/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
+  '/_authenticated/app/configuracoes': typeof AuthenticatedAppConfiguracoesRouteWithChildren
   '/_authenticated/app/novidades': typeof AuthenticatedAppNovidadesRoute
   '/_authenticated/app/programas': typeof AuthenticatedAppProgramasRouteWithChildren
   '/apps/$slug/preview': typeof AppsSlugPreviewRoute
+  '/_authenticated/app/configuracoes/filiais': typeof AuthenticatedAppConfiguracoesFiliaisRoute
   '/_authenticated/app/programas/$slug': typeof AuthenticatedAppProgramasSlugRoute
 }
 export interface FileRouteTypes {
@@ -162,6 +172,7 @@ export interface FileRouteTypes {
     | '/app/novidades'
     | '/app/programas'
     | '/apps/$slug/preview'
+    | '/app/configuracoes/filiais'
     | '/app/programas/$slug'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -177,6 +188,7 @@ export interface FileRouteTypes {
     | '/app/novidades'
     | '/app/programas'
     | '/apps/$slug/preview'
+    | '/app/configuracoes/filiais'
     | '/app/programas/$slug'
   id:
     | '__root__'
@@ -193,6 +205,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/novidades'
     | '/_authenticated/app/programas'
     | '/apps/$slug/preview'
+    | '/_authenticated/app/configuracoes/filiais'
     | '/_authenticated/app/programas/$slug'
   fileRoutesById: FileRoutesById
 }
@@ -305,8 +318,30 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppProgramasSlugRouteImport
       parentRoute: typeof AuthenticatedAppProgramasRoute
     }
+    '/_authenticated/app/configuracoes/filiais': {
+      id: '/_authenticated/app/configuracoes/filiais'
+      path: '/filiais'
+      fullPath: '/app/configuracoes/filiais'
+      preLoaderRoute: typeof AuthenticatedAppConfiguracoesFiliaisRouteImport
+      parentRoute: typeof AuthenticatedAppConfiguracoesRoute
+    }
   }
 }
+
+interface AuthenticatedAppConfiguracoesRouteChildren {
+  AuthenticatedAppConfiguracoesFiliaisRoute: typeof AuthenticatedAppConfiguracoesFiliaisRoute
+}
+
+const AuthenticatedAppConfiguracoesRouteChildren: AuthenticatedAppConfiguracoesRouteChildren =
+  {
+    AuthenticatedAppConfiguracoesFiliaisRoute:
+      AuthenticatedAppConfiguracoesFiliaisRoute,
+  }
+
+const AuthenticatedAppConfiguracoesRouteWithChildren =
+  AuthenticatedAppConfiguracoesRoute._addFileChildren(
+    AuthenticatedAppConfiguracoesRouteChildren,
+  )
 
 interface AuthenticatedAppProgramasRouteChildren {
   AuthenticatedAppProgramasSlugRoute: typeof AuthenticatedAppProgramasSlugRoute
@@ -324,14 +359,15 @@ const AuthenticatedAppProgramasRouteWithChildren =
 
 interface AuthenticatedAppRouteChildren {
   AuthenticatedAppCatalogoRoute: typeof AuthenticatedAppCatalogoRoute
-  AuthenticatedAppConfiguracoesRoute: typeof AuthenticatedAppConfiguracoesRoute
+  AuthenticatedAppConfiguracoesRoute: typeof AuthenticatedAppConfiguracoesRouteWithChildren
   AuthenticatedAppNovidadesRoute: typeof AuthenticatedAppNovidadesRoute
   AuthenticatedAppProgramasRoute: typeof AuthenticatedAppProgramasRouteWithChildren
 }
 
 const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppCatalogoRoute: AuthenticatedAppCatalogoRoute,
-  AuthenticatedAppConfiguracoesRoute: AuthenticatedAppConfiguracoesRoute,
+  AuthenticatedAppConfiguracoesRoute:
+    AuthenticatedAppConfiguracoesRouteWithChildren,
   AuthenticatedAppNovidadesRoute: AuthenticatedAppNovidadesRoute,
   AuthenticatedAppProgramasRoute: AuthenticatedAppProgramasRouteWithChildren,
 }
