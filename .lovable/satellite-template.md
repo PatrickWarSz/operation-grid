@@ -79,17 +79,24 @@ O QUE CONSTRUIR
    - hubLandingUrl() → `${HUB}/programas/${MODULE_ID}`
    - satelliteAppUrl() → URL absoluta de `/app` neste satélite.
 
-4) Guardião de sessão + entitlement (`src/hooks/useHubSession.ts`)
+4) Guardião de sessão + entitlement + unidade ativa (`src/hooks/useHubSession.ts`)
    - getSession(): se ausente → window.location.href = hubLoginUrl().
+   - Ao detectar sessão pelo fragment, ler também `unit_id` (mesmo fragment)
+     e salvar em `localStorage["hub:active_unit"]`. Se vier vazio, usar
+     o que já estiver salvo; se não houver nada, buscar a unit primária do
+     tenant via Supabase (`select id from units where tenant_id=? and is_primary`).
    - Se presente → consulta `public.v_module_access_effective`
      onde `module_id = MODULE_ID` (RLS já filtra por tenant).
    - Se `effective_status === 'blocked'` → redireciona pra hubLandingUrl().
-   - Expor: { user, profile, tenantId, status, loading }.
+   - Expor: { user, profile, tenantId, unitId, status, loading }.
 
 5) Layout `/app/*`
    - TopBar mostra: nome do app, nome do usuário (de profiles.full_name),
+     **nome da filial ativa (read-only)** com link "Trocar filial no Hub →"
+     abrindo `${HUB_BASE_URL}/app` em nova guia,
      badge do status (`active` | `trial: N dias`), botão "Voltar ao Hub"
      (link pra HUB_BASE_URL/app), botão Sair.
+   - Satélite NÃO tem switcher próprio de filial — fonte da verdade é o Hub.
    - Sair = `await supabase.auth.signOut(); window.location.href = HUB_BASE_URL;`
 
 6) Landing pública (`/`)
@@ -97,20 +104,31 @@ O QUE CONSTRUIR
      hubSignupUrl() / hubLoginUrl() com redirect = satelliteAppUrl().
    - NÃO tem formulário de cadastro local.
 
-7) Modelo de dados
+7) Modelo de dados (multi-tenant + multi-unidade)
    - Toda tabela: `id uuid pk default gen_random_uuid()`,
      `tenant_id uuid not null references public.tenants(id) on delete cascade`,
+     `unit_id uuid not null references public.units(id) on delete cascade`,
      `created_at`, `updated_at`.
-   - RLS:
+   - RLS dupla (tenant + unit):
      ```sql
      alter table public.<tabela> enable row level security;
-     create policy "tenant read"  on public.<tabela> for select
-       using (tenant_id = (select tenant_id from public.profiles where id = auth.uid()));
-     create policy "tenant write" on public.<tabela> for all
-       using (tenant_id = (select tenant_id from public.profiles where id = auth.uid()))
-       with check (tenant_id = (select tenant_id from public.profiles where id = auth.uid()));
+     create policy "tenant+unit read" on public.<tabela> for select
+       using (
+         tenant_id = (select tenant_id from public.profiles where id = auth.uid())
+         and public.user_has_unit_access(auth.uid(), unit_id)
+       );
+     create policy "tenant+unit write" on public.<tabela> for all
+       using (
+         tenant_id = (select tenant_id from public.profiles where id = auth.uid())
+         and public.user_has_unit_access(auth.uid(), unit_id)
+       )
+       with check (
+         tenant_id = (select tenant_id from public.profiles where id = auth.uid())
+         and public.user_has_unit_access(auth.uid(), unit_id)
+       );
      ```
-   - Em todo INSERT, setar `tenant_id` a partir do hook (não confiar no client puro).
+   - Em todo INSERT, setar `tenant_id` E `unit_id` a partir do hook (não confiar no client puro).
+   - Toda query: `.eq('tenant_id', tenantId).eq('unit_id', unitId)`.
 
 8) Estado local
    - Pode usar zustand/tanstack-query como cache.
@@ -160,9 +178,11 @@ trocas de plano. Tudo isso é responsabilidade do Hub.
 
 - Auth 100% no Hub (zero login/signup local)
 - Mesma URL+anon key Supabase do Hub
-- Toda tabela com `tenant_id` + RLS por tenant do `auth.uid()`
-- Sessão entra por fragment `#access_token=...` (default do supabase-js)
+- Toda tabela com `tenant_id` E `unit_id` + RLS dupla (tenant + `user_has_unit_access`)
+- Sessão entra por fragment `#access_token=...&unit_id=...` (default do supabase-js)
+- `unit_id` do fragment salvo em `localStorage["hub:active_unit"]`
 - Guardião lê `public.v_module_access_effective` e bloqueia se necessário
+- TopBar exibe filial ativa (read-only) com link "Trocar filial no Hub"
 - Botão "Voltar ao Hub" e "Sair" sempre visíveis no `/app`
 - Landing pública com CTAs apontando para `hubSignupUrl()` / `hubLoginUrl()`
 

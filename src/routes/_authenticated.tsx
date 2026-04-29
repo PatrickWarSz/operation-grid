@@ -2,11 +2,13 @@ import { createFileRoute, Outlet, Link, useNavigate, useLocation } from "@tansta
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { WorkspaceProvider, useWorkspace } from "@/hooks/useWorkspace";
+import { UnitsProvider } from "@/hooks/useUnits";
 import { greetingFor, firstName } from "@/lib/workspace-theme";
 import { PageTransition } from "@/components/PageTransition";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { OnboardingWizard } from "@/components/workspace/OnboardingWizard";
 import { NotificationBell } from "@/components/workspace/NotificationBell";
+import { UnitSwitcher } from "@/components/workspace/UnitSwitcher";
 import {
   Home,
   LayoutGrid,
@@ -44,7 +46,9 @@ function AuthenticatedLayout() {
 
   return (
     <WorkspaceProvider>
-      <WorkspaceShell />
+      <UnitsProvider>
+        <WorkspaceShell />
+      </UnitsProvider>
     </WorkspaceProvider>
   );
 }
@@ -147,6 +151,7 @@ function WorkspaceShell() {
                 </div>
               </div>
               <div className="flex items-center gap-1.5">
+                <UnitSwitcher />
                 <NotificationBell />
                 <button
                   onClick={() => setMode(branding.theme_mode === "light" ? "dark" : "light")}
