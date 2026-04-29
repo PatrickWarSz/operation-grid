@@ -253,17 +253,16 @@ function SidebarContent({ workspaceLabel, logo, isActive, unreadCount, isAdmin, 
         {isAdmin && (
           <>
             <div className="pt-4 pb-1.5 px-3 text-[10px] uppercase tracking-widest ws-sidebar-muted">
-              Admin
+              Sistema
             </div>
-            <Link
-              to="/admin/novidades"
+            <a
+              href="/admin"
               onClick={onClick}
               className="ws-nav-link"
-              data-active={isActive("/admin/novidades", false)}
             >
               <ShieldCheck className="h-4 w-4" />
-              <span>Novidades</span>
-            </Link>
+              <span>Painel do Sistema</span>
+            </a>
           </>
         )}
       </nav>
