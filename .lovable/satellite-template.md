@@ -97,20 +97,31 @@ O QUE CONSTRUIR
      hubSignupUrl() / hubLoginUrl() com redirect = satelliteAppUrl().
    - NÃO tem formulário de cadastro local.
 
-7) Modelo de dados
+7) Modelo de dados (multi-tenant + multi-unidade)
    - Toda tabela: `id uuid pk default gen_random_uuid()`,
      `tenant_id uuid not null references public.tenants(id) on delete cascade`,
+     `unit_id uuid not null references public.units(id) on delete cascade`,
      `created_at`, `updated_at`.
-   - RLS:
+   - RLS dupla (tenant + unit):
      ```sql
      alter table public.<tabela> enable row level security;
-     create policy "tenant read"  on public.<tabela> for select
-       using (tenant_id = (select tenant_id from public.profiles where id = auth.uid()));
-     create policy "tenant write" on public.<tabela> for all
-       using (tenant_id = (select tenant_id from public.profiles where id = auth.uid()))
-       with check (tenant_id = (select tenant_id from public.profiles where id = auth.uid()));
+     create policy "tenant+unit read" on public.<tabela> for select
+       using (
+         tenant_id = (select tenant_id from public.profiles where id = auth.uid())
+         and public.user_has_unit_access(auth.uid(), unit_id)
+       );
+     create policy "tenant+unit write" on public.<tabela> for all
+       using (
+         tenant_id = (select tenant_id from public.profiles where id = auth.uid())
+         and public.user_has_unit_access(auth.uid(), unit_id)
+       )
+       with check (
+         tenant_id = (select tenant_id from public.profiles where id = auth.uid())
+         and public.user_has_unit_access(auth.uid(), unit_id)
+       );
      ```
-   - Em todo INSERT, setar `tenant_id` a partir do hook (não confiar no client puro).
+   - Em todo INSERT, setar `tenant_id` E `unit_id` a partir do hook (não confiar no client puro).
+   - Toda query: `.eq('tenant_id', tenantId).eq('unit_id', unitId)`.
 
 8) Estado local
    - Pode usar zustand/tanstack-query como cache.
