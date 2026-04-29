@@ -178,9 +178,11 @@ trocas de plano. Tudo isso é responsabilidade do Hub.
 
 - Auth 100% no Hub (zero login/signup local)
 - Mesma URL+anon key Supabase do Hub
-- Toda tabela com `tenant_id` + RLS por tenant do `auth.uid()`
-- Sessão entra por fragment `#access_token=...` (default do supabase-js)
+- Toda tabela com `tenant_id` E `unit_id` + RLS dupla (tenant + `user_has_unit_access`)
+- Sessão entra por fragment `#access_token=...&unit_id=...` (default do supabase-js)
+- `unit_id` do fragment salvo em `localStorage["hub:active_unit"]`
 - Guardião lê `public.v_module_access_effective` e bloqueia se necessário
+- TopBar exibe filial ativa (read-only) com link "Trocar filial no Hub"
 - Botão "Voltar ao Hub" e "Sair" sempre visíveis no `/app`
 - Landing pública com CTAs apontando para `hubSignupUrl()` / `hubLoginUrl()`
 
