@@ -78,9 +78,14 @@ function LoginPage() {
 
   const onGoogle = async () => {
     setError(null);
+    // OAuth Google: se vier de satélite, manda Google redirecionar direto pro
+    // satélite (handoff de fragment é feito pelo próprio Supabase nesse caso).
+    const oauthRedirectTo = externalRedirect
+      ? externalRedirect
+      : `${window.location.origin}${buildInternalTarget()}`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}${buildTarget()}` },
+      options: { redirectTo: oauthRedirectTo },
     });
     if (error) setError(error.message);
   };
@@ -208,7 +213,7 @@ function LoginPage() {
           Ainda não tem conta?{" "}
           <Link
             to="/signup"
-            search={intentModule ? { intent: intentModule.id, redirect: redirectTarget } : undefined}
+            search={intentModule ? { intent: intentModule.id, redirect: rawRedirect ?? internalRedirect } : undefined}
             className="text-primary font-medium hover:underline"
           >
             Criar conta gratuita
