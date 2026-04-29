@@ -250,7 +250,7 @@ function SignupPage() {
           Já tem conta?{" "}
           <Link
             to="/login"
-            search={intentModule ? { intent: intentModule.id, redirect: redirectTarget } : undefined}
+            search={intentModule ? { intent: intentModule.id, redirect: rawRedirect ?? internalRedirect } : undefined}
             className="text-primary font-medium hover:underline"
           >
             Entrar
