@@ -79,17 +79,24 @@ O QUE CONSTRUIR
    - hubLandingUrl() → `${HUB}/programas/${MODULE_ID}`
    - satelliteAppUrl() → URL absoluta de `/app` neste satélite.
 
-4) Guardião de sessão + entitlement (`src/hooks/useHubSession.ts`)
+4) Guardião de sessão + entitlement + unidade ativa (`src/hooks/useHubSession.ts`)
    - getSession(): se ausente → window.location.href = hubLoginUrl().
+   - Ao detectar sessão pelo fragment, ler também `unit_id` (mesmo fragment)
+     e salvar em `localStorage["hub:active_unit"]`. Se vier vazio, usar
+     o que já estiver salvo; se não houver nada, buscar a unit primária do
+     tenant via Supabase (`select id from units where tenant_id=? and is_primary`).
    - Se presente → consulta `public.v_module_access_effective`
      onde `module_id = MODULE_ID` (RLS já filtra por tenant).
    - Se `effective_status === 'blocked'` → redireciona pra hubLandingUrl().
-   - Expor: { user, profile, tenantId, status, loading }.
+   - Expor: { user, profile, tenantId, unitId, status, loading }.
 
 5) Layout `/app/*`
    - TopBar mostra: nome do app, nome do usuário (de profiles.full_name),
+     **nome da filial ativa (read-only)** com link "Trocar filial no Hub →"
+     abrindo `${HUB_BASE_URL}/app` em nova guia,
      badge do status (`active` | `trial: N dias`), botão "Voltar ao Hub"
      (link pra HUB_BASE_URL/app), botão Sair.
+   - Satélite NÃO tem switcher próprio de filial — fonte da verdade é o Hub.
    - Sair = `await supabase.auth.signOut(); window.location.href = HUB_BASE_URL;`
 
 6) Landing pública (`/`)
