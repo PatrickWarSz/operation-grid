@@ -23,6 +23,14 @@ export type AppModule = {
   /** Suggested monthly price in BRL for the "build your own" calculator */
   price: number;
   accent?: string;
+  /**
+   * URL pública pra abrir o app satélite (workspace do programa).
+   * Quando definida, o card do workspace abre em nova guia com handoff de sessão
+   * em vez de renderizar /apps/<slug> em iframe interno.
+   */
+  externalUrl?: string;
+  /** URL da landing pública do programa (fora do Hub). */
+  landingUrl?: string;
 };
 
 export const MODULES: AppModule[] = [
@@ -44,19 +52,21 @@ export const MODULES: AppModule[] = [
   },
   {
     id: "estoque",
-    name: "Gestão de Estoque & Pedidos",
-    short: "Matéria-prima, níveis mínimos e reposição automática.",
+    name: "Estoque Pro",
+    short: "Controle de matéria-prima para fabricantes têxteis.",
     description:
-      "Controle de matéria-prima e produtos acabados com pedidos de reposição inteligentes. Nunca mais pare a operação por falta de insumo.",
+      "Aviamentos, linha, tecido, embalagem, etiquetas e tags sob controle. Pedidos de reposição inteligentes pra manter o giro sem faltar nem sobrar.",
     features: [
-      "Controle de matéria-prima",
+      "Controle de matéria-prima têxtil",
       "Pedidos de compra automatizados",
       "Alertas de estoque mínimo",
       "Movimentações e auditoria",
     ],
     icon: Boxes,
     status: "available",
-    price: 199,
+    price: 49,
+    externalUrl: "https://estoquemat.lovable.app/app/estoque",
+    landingUrl: "https://estoquemat.lovable.app/",
   },
   {
     id: "financeiro-empresa",

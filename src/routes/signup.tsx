@@ -7,6 +7,7 @@ import { Eye, EyeOff, ArrowRight, ArrowLeft, Hexagon, Check, AlertCircle, CheckC
 import { AuthBackdrop } from "@/components/auth/AuthBackdrop";
 import { supabase } from "@/integrations/supabase/client";
 import { MODULES } from "@/lib/modules";
+import { isAllowedSatelliteUrl, buildSatelliteUrl } from "@/lib/satellite-handoff";
 
 type SignupSearch = { intent?: string; redirect?: string };
 
@@ -33,8 +34,17 @@ const PERKS = [
 function SignupPage() {
   const search = Route.useSearch();
   const intentModule = search.intent ? MODULES.find((m) => m.id === search.intent) : undefined;
-  const redirectTarget = search.redirect
-    ?? (intentModule ? `/app/programas/${intentModule.id}` : "/app");
+
+  // Aceita redirect EXTERNO se for satélite whitelisted, ou path interno.
+  const rawRedirect = search.redirect;
+  const isExternal = !!rawRedirect && /^https?:\/\//i.test(rawRedirect);
+  const externalRedirect = isExternal && rawRedirect && isAllowedSatelliteUrl(rawRedirect) ? rawRedirect : null;
+  const internalRedirect =
+    !isExternal && rawRedirect
+      ? rawRedirect
+      : intentModule
+      ? `/app/programas/${intentModule.id}`
+      : "/app";
 
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -45,14 +55,21 @@ function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const buildInternalTarget = () =>
+    `${internalRedirect}${
+      intentModule ? (internalRedirect.includes("?") ? "&" : "?") + "intent=" + intentModule.id : ""
+    }`;
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setInfo(null);
     setLoading(true);
-    const emailRedirect = `${window.location.origin}${redirectTarget}${
-      intentModule ? (redirectTarget.includes("?") ? "&" : "?") + "intent=" + intentModule.id : ""
-    }`;
+    // Pra confirmação de email: se for fluxo de satélite, manda o link de
+    // confirmação direto pro satélite. Senão, fluxo interno normal.
+    const emailRedirect = externalRedirect
+      ? externalRedirect
+      : `${window.location.origin}${buildInternalTarget()}`;
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -67,10 +84,12 @@ function SignupPage() {
       return;
     }
     if (data.session) {
-      // sessão imediata: workspace lerá ?intent= e iniciará trial
-      window.location.href = `${redirectTarget}${
-        intentModule ? (redirectTarget.includes("?") ? "&" : "?") + "intent=" + intentModule.id : ""
-      }`;
+      // Sessão imediata: handoff direto se for satélite, senão internal nav.
+      if (externalRedirect) {
+        window.location.href = buildSatelliteUrl(externalRedirect, data.session);
+      } else {
+        window.location.href = buildInternalTarget();
+      }
     } else {
       setInfo("Conta criada! Verifique seu e-mail para confirmar e poder entrar.");
     }
@@ -78,9 +97,9 @@ function SignupPage() {
 
   const onGoogle = async () => {
     setError(null);
-    const target = `${window.location.origin}${redirectTarget}${
-      intentModule ? (redirectTarget.includes("?") ? "&" : "?") + "intent=" + intentModule.id : ""
-    }`;
+    const target = externalRedirect
+      ? externalRedirect
+      : `${window.location.origin}${buildInternalTarget()}`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: target },
@@ -231,7 +250,7 @@ function SignupPage() {
           Já tem conta?{" "}
           <Link
             to="/login"
-            search={intentModule ? { intent: intentModule.id, redirect: redirectTarget } : undefined}
+            search={intentModule ? { intent: intentModule.id, redirect: rawRedirect ?? internalRedirect } : undefined}
             className="text-primary font-medium hover:underline"
           >
             Entrar

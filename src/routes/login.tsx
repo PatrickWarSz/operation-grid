@@ -7,6 +7,7 @@ import { Eye, EyeOff, ArrowRight, ArrowLeft, Hexagon, AlertCircle, Sparkles } fr
 import { AuthBackdrop } from "@/components/auth/AuthBackdrop";
 import { supabase } from "@/integrations/supabase/client";
 import { MODULES } from "@/lib/modules";
+import { isAllowedSatelliteUrl, buildSatelliteUrl } from "@/lib/satellite-handoff";
 
 type LoginSearch = { intent?: string; redirect?: string };
 
@@ -28,8 +29,18 @@ function LoginPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
   const intentModule = search.intent ? MODULES.find((m) => m.id === search.intent) : undefined;
-  const redirectTarget = search.redirect
-    ?? (intentModule ? `/app/programas/${intentModule.id}` : "/app");
+
+  // Aceita redirect EXTERNO se for satélite whitelisted, ou path interno.
+  // Defensivo contra open redirect: qualquer URL absoluta não-whitelisted é descartada.
+  const rawRedirect = search.redirect;
+  const isExternal = !!rawRedirect && /^https?:\/\//i.test(rawRedirect);
+  const externalRedirect = isExternal && rawRedirect && isAllowedSatelliteUrl(rawRedirect) ? rawRedirect : null;
+  const internalRedirect =
+    !isExternal && rawRedirect
+      ? rawRedirect
+      : intentModule
+      ? `/app/programas/${intentModule.id}`
+      : "/app";
 
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -37,16 +48,16 @@ function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const buildTarget = () =>
-    `${redirectTarget}${
-      intentModule ? (redirectTarget.includes("?") ? "&" : "?") + "intent=" + intentModule.id : ""
+  const buildInternalTarget = () =>
+    `${internalRedirect}${
+      intentModule ? (internalRedirect.includes("?") ? "&" : "?") + "intent=" + intentModule.id : ""
     }`;
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) {
       setError(
@@ -56,15 +67,25 @@ function LoginPage() {
       );
       return;
     }
+    // Redirect externo (satélite): handoff via fragment com access_token/refresh_token.
+    if (externalRedirect && data.session) {
+      window.location.href = buildSatelliteUrl(externalRedirect, data.session);
+      return;
+    }
     // hard nav garante que o workspace leia ?intent= do URL
-    window.location.href = buildTarget();
+    window.location.href = buildInternalTarget();
   };
 
   const onGoogle = async () => {
     setError(null);
+    // OAuth Google: se vier de satélite, manda Google redirecionar direto pro
+    // satélite (handoff de fragment é feito pelo próprio Supabase nesse caso).
+    const oauthRedirectTo = externalRedirect
+      ? externalRedirect
+      : `${window.location.origin}${buildInternalTarget()}`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}${buildTarget()}` },
+      options: { redirectTo: oauthRedirectTo },
     });
     if (error) setError(error.message);
   };
@@ -192,7 +213,7 @@ function LoginPage() {
           Ainda não tem conta?{" "}
           <Link
             to="/signup"
-            search={intentModule ? { intent: intentModule.id, redirect: redirectTarget } : undefined}
+            search={intentModule ? { intent: intentModule.id, redirect: rawRedirect ?? internalRedirect } : undefined}
             className="text-primary font-medium hover:underline"
           >
             Criar conta gratuita
