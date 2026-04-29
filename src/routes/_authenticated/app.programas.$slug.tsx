@@ -4,6 +4,7 @@ import { useWorkspace } from "@/hooks/useWorkspace";
 import { ArrowLeft, Lock, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { buildSatelliteUrl, isAllowedSatelliteUrl } from "@/lib/satellite-handoff";
+import { useUnits } from "@/hooks/useUnits";
 
 export const Route = createFileRoute("/_authenticated/app/programas/$slug")({
   loader: ({ params }) => {
@@ -97,9 +98,10 @@ function ProgramaDetail() {
 }
 
 function ExternalSatellitePanel({ module: m }: { module: typeof MODULES[number] }) {
+  const { activeUnitId } = useUnits();
   const open = async () => {
     const { data } = await supabase.auth.getSession();
-    const url = buildSatelliteUrl(m.externalUrl!, data.session);
+    const url = buildSatelliteUrl(m.externalUrl!, data.session, { unitId: activeUnitId });
     window.open(url, "_blank", "noopener,noreferrer");
   };
   return (

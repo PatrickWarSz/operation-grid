@@ -10,6 +10,7 @@ import { StartTrialButton, TrialBadge } from "@/components/workspace/TrialContro
 import { EmptyStateRecommendations } from "@/components/workspace/EmptyStateRecommendations";
 import { supabase } from "@/integrations/supabase/client";
 import { buildSatelliteUrl, isAllowedSatelliteUrl } from "@/lib/satellite-handoff";
+import { useUnits } from "@/hooks/useUnits";
 
 type AppSearch = { intent?: string };
 
@@ -24,6 +25,7 @@ export const Route = createFileRoute("/_authenticated/app")({
 function HomePortal() {
   const { user } = useAuth();
   const { loading, tenantName, fullName, branding, access, announcements, unreadIds, startTrial } = useWorkspace();
+  const { activeUnitId } = useUnits();
   const search = Route.useSearch();
   const navigate = useNavigate();
   const handledIntent = useRef<string | null>(null);
@@ -43,7 +45,7 @@ function HomePortal() {
       // Se o módulo é satélite externo whitelisted, faz handoff de sessão.
       if (mod.externalUrl && isAllowedSatelliteUrl(mod.externalUrl)) {
         const { data } = await supabase.auth.getSession();
-        window.location.href = buildSatelliteUrl(mod.externalUrl, data.session);
+        window.location.href = buildSatelliteUrl(mod.externalUrl, data.session, { unitId: activeUnitId });
         return;
       }
       navigate({ to: "/app/programas/$slug", params: { slug: intent }, replace: true });
@@ -55,7 +57,7 @@ function HomePortal() {
     }
     // inicia trial silenciosamente; ignora erro (ex: já iniciado antes)
     startTrial(intent).catch(() => {}).finally(() => { void goToProgram(); });
-  }, [loading, search.intent, access, startTrial, navigate]);
+  }, [loading, search.intent, access, startTrial, navigate, activeUnitId]);
 
   const display = firstName(fullName ?? user?.email ?? "");
   const greeting = greetingFor();
@@ -160,12 +162,13 @@ type ModuleType = (typeof MODULES)[number];
 
 function ActiveProgramCard({ module: m, hasUpdate }: { module: ModuleType; hasUpdate: boolean }) {
   const Icon = m.icon;
+  const { activeUnitId } = useUnits();
   const isExternal = !!m.externalUrl && isAllowedSatelliteUrl(m.externalUrl);
 
   const handleExternalOpen = async (e: React.MouseEvent) => {
     e.preventDefault();
     const { data } = await supabase.auth.getSession();
-    const url = buildSatelliteUrl(m.externalUrl!, data.session);
+    const url = buildSatelliteUrl(m.externalUrl!, data.session, { unitId: activeUnitId });
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
