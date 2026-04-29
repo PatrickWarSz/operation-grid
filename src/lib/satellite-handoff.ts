@@ -38,25 +38,41 @@ export function isAllowedSatelliteUrl(url: string): boolean {
   }
 }
 
+export interface BuildSatelliteUrlOpts {
+  /** ID da filial ativa no Hub. Vai no fragment como `unit_id=...`. */
+  unitId?: string | null;
+}
+
 /**
  * Monta a URL final pro satélite com handoff de sessão no fragment.
  * Se a sessão for null, devolve a URL sem token (satélite vai mandar voltar
  * pro Hub login).
+ *
+ * Quando `opts.unitId` é passado, o fragment ganha `&unit_id=<uuid>` para o
+ * satélite saber qual filial está ativa (ele lê e persiste em
+ * localStorage["hub:active_unit"]).
  */
-export function buildSatelliteUrl(externalUrl: string, session: Session | null): string {
+export function buildSatelliteUrl(
+  externalUrl: string,
+  session: Session | null,
+  opts: BuildSatelliteUrlOpts = {},
+): string {
   if (!isAllowedSatelliteUrl(externalUrl)) {
     // Defensivo: nunca expor tokens pra host não-whitelisted.
     return externalUrl;
   }
   if (!session) return externalUrl;
 
-  const fragment = new URLSearchParams({
+  const params: Record<string, string> = {
     access_token: session.access_token,
     refresh_token: session.refresh_token,
     expires_in: String(session.expires_in ?? 3600),
     token_type: session.token_type ?? "bearer",
     type: "recovery",
-  }).toString();
+  };
+  if (opts.unitId) params.unit_id = opts.unitId;
+
+  const fragment = new URLSearchParams(params).toString();
 
   // Preserva qualquer fragment já existente seria raro aqui; sobrescrevemos.
   const [base] = externalUrl.split("#");
