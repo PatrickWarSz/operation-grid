@@ -1,244 +1,261 @@
+# Painel Admin + Cobrança Asaas
 
-# Multi-unidade (Filiais) — sem Lovable Cloud
-
-Divisão clara: **você** roda 1 bloco de SQL no Supabase (SQL Editor). **Eu** faço todo o resto no código (hooks, switcher, página de filiais, handoff e template do satélite).
-
----
-
-## Parte 1 — SQL que VOCÊ roda no Supabase
-
-Abra **Supabase → SQL Editor → New query**, cole o bloco abaixo e clique em **Run**. É idempotente (pode rodar de novo sem quebrar).
-
-```sql
--- =========================================================
--- MULTI-UNIDADE (Filiais) — Hub Nexus
--- =========================================================
-
--- 1) Tabela units
-create table if not exists public.units (
-  id uuid primary key default gen_random_uuid(),
-  tenant_id uuid not null references public.tenants(id) on delete cascade,
-  name text not null,
-  slug text not null,
-  is_primary boolean not null default false,
-  address jsonb,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique (tenant_id, slug)
-);
-create index if not exists units_tenant_idx on public.units(tenant_id);
-
--- só uma primária por tenant
-create unique index if not exists units_one_primary_per_tenant
-  on public.units(tenant_id) where is_primary;
-
--- 2) Tabela user_units (acesso explícito)
-create table if not exists public.user_units (
-  user_id uuid not null references auth.users(id) on delete cascade,
-  unit_id uuid not null references public.units(id) on delete cascade,
-  role text not null default 'member', -- 'admin' | 'member'
-  created_at timestamptz not null default now(),
-  primary key (user_id, unit_id)
-);
-create index if not exists user_units_unit_idx on public.user_units(unit_id);
-
--- 3) Funções security definer (sem recursão de RLS)
-create or replace function public.user_has_unit_access(_user uuid, _unit uuid)
-returns boolean
-language sql stable security definer set search_path = public as $$
-  select exists (
-    select 1 from public.user_units
-    where user_id = _user and unit_id = _unit
-  );
-$$;
-
-create or replace function public.user_tenant_id(_user uuid)
-returns uuid
-language sql stable security definer set search_path = public as $$
-  select tenant_id from public.profiles where id = _user;
-$$;
-
-create or replace function public.tenant_max_units(_tenant uuid)
-returns int
-language sql stable security definer set search_path = public as $$
-  -- Lê do maior plano ativo do tenant. Ajuste se sua tabela de plano tiver outro nome.
-  -- Default 1 se não encontrar nada.
-  select coalesce(max(max_units), 1)
-  from public.tenant_module_access tma
-  where tma.tenant_id = _tenant;
-$$;
-
--- 4) Coluna max_units no controle de plano/módulo
-alter table public.tenant_module_access
-  add column if not exists max_units int not null default 1;
-
--- 5) RLS
-alter table public.units enable row level security;
-alter table public.user_units enable row level security;
-
-drop policy if exists "units_select_member" on public.units;
-create policy "units_select_member" on public.units
-  for select to authenticated
-  using (public.user_has_unit_access(auth.uid(), id));
-
-drop policy if exists "units_insert_admin" on public.units;
-create policy "units_insert_admin" on public.units
-  for insert to authenticated
-  with check (
-    tenant_id = public.user_tenant_id(auth.uid())
-    and public.has_role(auth.uid(), 'admin')
-  );
-
-drop policy if exists "units_update_admin" on public.units;
-create policy "units_update_admin" on public.units
-  for update to authenticated
-  using (
-    tenant_id = public.user_tenant_id(auth.uid())
-    and public.has_role(auth.uid(), 'admin')
-  );
-
-drop policy if exists "units_delete_admin" on public.units;
-create policy "units_delete_admin" on public.units
-  for delete to authenticated
-  using (
-    tenant_id = public.user_tenant_id(auth.uid())
-    and public.has_role(auth.uid(), 'admin')
-    and is_primary = false
-  );
-
-drop policy if exists "user_units_select_self" on public.user_units;
-create policy "user_units_select_self" on public.user_units
-  for select to authenticated
-  using (
-    user_id = auth.uid()
-    or exists (
-      select 1 from public.units u
-      where u.id = unit_id
-        and u.tenant_id = public.user_tenant_id(auth.uid())
-        and public.has_role(auth.uid(), 'admin')
-    )
-  );
-
-drop policy if exists "user_units_admin_write" on public.user_units;
-create policy "user_units_admin_write" on public.user_units
-  for all to authenticated
-  using (
-    exists (
-      select 1 from public.units u
-      where u.id = unit_id
-        and u.tenant_id = public.user_tenant_id(auth.uid())
-        and public.has_role(auth.uid(), 'admin')
-    )
-  )
-  with check (
-    exists (
-      select 1 from public.units u
-      where u.id = unit_id
-        and u.tenant_id = public.user_tenant_id(auth.uid())
-        and public.has_role(auth.uid(), 'admin')
-    )
-  );
-
--- 6) Backfill: cria "Matriz" pra todo tenant existente
-insert into public.units (tenant_id, name, slug, is_primary)
-select t.id, 'Matriz', 'matriz', true
-from public.tenants t
-where not exists (
-  select 1 from public.units u where u.tenant_id = t.id and u.is_primary
-);
-
--- vincula todos os profiles à matriz do tenant
-insert into public.user_units (user_id, unit_id, role)
-select p.id, u.id, 'member'
-from public.profiles p
-join public.units u on u.tenant_id = p.tenant_id and u.is_primary
-on conflict do nothing;
-
--- 7) Trigger: novo tenant → cria Matriz; novo profile → vincula à Matriz
-create or replace function public.create_primary_unit_for_tenant()
-returns trigger language plpgsql security definer set search_path = public as $$
-begin
-  insert into public.units (tenant_id, name, slug, is_primary)
-  values (new.id, 'Matriz', 'matriz', true)
-  on conflict do nothing;
-  return new;
-end;
-$$;
-
-drop trigger if exists trg_tenant_primary_unit on public.tenants;
-create trigger trg_tenant_primary_unit
-  after insert on public.tenants
-  for each row execute function public.create_primary_unit_for_tenant();
-
-create or replace function public.link_profile_to_primary_unit()
-returns trigger language plpgsql security definer set search_path = public as $$
-declare _unit uuid;
-begin
-  select id into _unit from public.units
-   where tenant_id = new.tenant_id and is_primary limit 1;
-  if _unit is not null then
-    insert into public.user_units (user_id, unit_id, role)
-    values (new.id, _unit, 'member')
-    on conflict do nothing;
-  end if;
-  return new;
-end;
-$$;
-
-drop trigger if exists trg_profile_link_unit on public.profiles;
-create trigger trg_profile_link_unit
-  after insert on public.profiles
-  for each row execute function public.link_profile_to_primary_unit();
-```
-
-**Pontos a confirmar antes de rodar:**
-- Sua tabela de plano por tenant se chama mesmo `tenant_module_access`? Se tiver uma `plans` separada, me avise — ajusto o `tenant_max_units()`.
-- A função `has_role(uuid, app_role)` já existe (foi criada no setup de roles). Se não, me avise.
-
-Quando rodar, me responde só **"rodei"** que eu sigo pra Parte 2.
+Construir um painel de gerenciamento separado e integrar pagamento recorrente via Asaas com trial automático de 7 dias.
 
 ---
 
-## Parte 2 — Código que EU faço (Hub)
+## Arquitetura geral
 
-Sem tocar em DB, só consumindo o que o SQL acima criou.
-
-**Arquivos novos**
-- `src/hooks/useUnits.tsx` — carrega `units` visíveis + `user_units`, gerencia `activeUnitId` em `localStorage["hub:active_unit"]`, expõe `setActiveUnit`, `maxUnits`, `canCreateUnit`.
-- `src/components/workspace/UnitSwitcher.tsx` — dropdown estilo Slack no header, à esquerda do `NotificationBell`. Lista units, marca a ativa, item "Gerenciar filiais", item "+ Nova filial" (se admin e dentro do limite).
-- `src/routes/_authenticated/app.configuracoes.filiais.tsx` — página de gestão: lista, criar/editar, membros por unit, contador `usadas / max_units` + CTA de upgrade.
-
-**Arquivos editados**
-- `src/routes/_authenticated.tsx` — encaixa o `<UnitSwitcher />` no header.
-- `src/lib/satellite-handoff.ts` — `buildSatelliteUrl(url, session, { unitId? })` anexa `&unit_id=<uuid>` no fragment.
-- `src/routes/_authenticated/app.tsx` e `app.programas.$slug.tsx` — passam `activeUnitId` ao abrir satélite.
-- `src/lib/modules.ts` — adiciona `maxUnits` em cada plano (Starter=1, Growth=3, Enterprise=∞ representado por `null`/`Infinity`). Só visual no Hub; o limite real é o do banco.
-
-**Memória**
-- `mem://features/multi-unit.md` com o contrato completo.
-- Atualizar Core do `mem://index.md` com a regra "Tenant=empresa, Unit=filial; toda tabela de negócio tem `tenant_id` E `unit_id`; acesso por `user_units`".
-
----
-
-## Parte 3 — Template do satélite (atualizo o `.lovable/satellite-template.md`)
-
-Adiciono ao template, pra que próximos satélites já nasçam multi-unit:
-
-1. SQL do satélite: toda tabela de negócio com `unit_id uuid not null references units(id)` + RLS dupla (`tenant_id` E `user_has_unit_access(auth.uid(), unit_id)`).
-2. `src/lib/hub.ts` do satélite lê `unit_id` do fragment no handoff e salva em `localStorage["hub:active_unit"]`.
-3. Header do satélite mostra a unit ativa (read-only) com link "Trocar filial no Hub →".
-4. Toda query do satélite: `.eq('tenant_id', tenant).eq('unit_id', unit)`.
-
----
-
-## Fluxo
+Separamos o sistema em **3 espaços** mentalmente distintos, todos no mesmo projeto:
 
 ```text
-1. Você cola o SQL da Parte 1 no Supabase e roda.
-2. Me responde "rodei".
-3. Eu executo Parte 2 + Parte 3 (puro código TS/React).
-4. Switcher aparece no header, página /app/configuracoes/filiais funciona,
-   handoff já leva unit_id pros satélites.
+seuhub.com/                      → landing pública (já existe)
+seuhub.com/app/*                 → workspace do CLIENTE (já existe)
+seuhub.com/admin/*               → painel do DONO (novo)
 ```
 
-Aprova esse plano? Se sim, eu já te entrego o SQL pra você rodar e fico aguardando seu "rodei" pra seguir com o código.
+Hoje você usa `/admin` no mesmo subdomínio. Quando quiser migrar pra `admin.seuhub.com`, é só apontar um CNAME — o código já fica preparado pra isso (mesmo build, host diferente). Não precisa refazer nada.
+
+**Visual do `/admin`:** sidebar própria (cor diferente, badge "Painel do Sistema" no topo, ícones diferentes) pra deixar óbvio que você não está vendo o que cliente vê.
+
+---
+
+## Parte 1 — Painel Admin (`/admin/*`)
+
+### Páginas
+
+1. **`/admin`** — Dashboard
+   - Cards: total clientes, MRR, trials ativos, inadimplentes, novos no mês
+   - Atividade recente (últimas ativações, pagamentos, cancelamentos)
+
+2. **`/admin/clientes`** — Lista de tenants
+   - Busca por nome/email
+   - Filtros: ativos, em trial, inadimplentes, cancelados
+   - Click → detalhe do cliente
+
+3. **`/admin/clientes/$id`** — Detalhe de um cliente
+   - Dados da empresa, dono, unidades, usuários
+   - Seção "Módulos contratados" com toggle por módulo (Ativo / Trial / Bloqueado)
+   - Seção "Plano" com botão pra trocar (Starter / Growth / Pro)
+   - Seção "Pagamentos" — histórico de cobranças Asaas
+   - Botão "Liberar trial manual" / "Cancelar" / "Reativar"
+
+4. **`/admin/modulos`** — Catálogo
+   - Editar nome, descrição, preços, status (disponível / em breve)
+   - Sincroniza com `src/lib/modules.ts` via tabela `modules_catalog`
+
+5. **`/admin/planos`** — Planos & preços
+   - Criar/editar planos (Starter R$X, Growth R$Y, etc.)
+   - Definir quais módulos cada plano inclui e `max_units`
+
+6. **`/admin/usuarios`** — Usuários globais
+   - Lista de todos os profiles
+   - Promover/remover Super Admin
+
+7. **`/admin/novidades`** — Já existe (`admin.novidades.tsx`)
+   - Mantém como está, só move pro novo layout
+
+8. **`/admin/financeiro`** — Pagamentos Asaas
+   - Lista de cobranças (pagas, pendentes, vencidas)
+   - Total recebido no mês
+
+### Proteção
+
+Layout `_admin.tsx` com `beforeLoad` checando `auth.hasRole('admin')` no servidor. Quem não é admin é redirecionado pra `/app`. Sem flash de tela.
+
+---
+
+## Parte 2 — Integração Asaas
+
+### Fluxo de assinatura (cliente novo)
+
+```text
+1. Visitante na landing → escolhe plano → clica "Assinar"
+2. Cria conta no Hub (signup normal)
+3. Backend cria customer + subscription no Asaas (trial 7 dias)
+4. Cliente recebe email do Asaas com link de pagamento
+5. Cliente entra no /app — trial já ativo, todos módulos do plano liberados
+6. Dia 7: Asaas cobra automaticamente (Pix/Boleto/Cartão escolhido)
+7. Webhook recebe "PAYMENT_CONFIRMED" → mantém ativo
+   ou "PAYMENT_OVERDUE" → bloqueia módulos depois de N dias de carência
+```
+
+### Fluxo de renovação mensal
+
+Asaas cobra sozinho todo mês. Webhook atualiza status:
+- `PAYMENT_CONFIRMED` → tudo continua
+- `PAYMENT_OVERDUE` → marca tenant como inadimplente, envia notificação
+- 7 dias depois ainda sem pagar → bloqueia acesso aos módulos (mantém login)
+
+### O que precisa
+
+- **Conta Asaas** (você cria em asaas.com — sandbox grátis pra testar)
+- **API key Asaas** — você me passa, salvo em secret `ASAAS_API_KEY`
+- **Webhook secret** — gerado por nós, configurado no painel Asaas
+- **URL de webhook**: `https://hubnexusgrid.lovable.app/api/public/asaas-webhook`
+
+---
+
+## Banco de dados (mudanças)
+
+```sql
+-- Tabela de planos
+create table public.plans (
+  id uuid primary key default gen_random_uuid(),
+  slug text unique not null,         -- starter, growth, pro
+  name text not null,
+  price_monthly numeric not null,
+  max_units int not null default 1,
+  module_slugs text[] not null,      -- ['estoque','financeiro']
+  active boolean default true,
+  created_at timestamptz default now()
+);
+
+-- Catálogo de módulos editável (espelha src/lib/modules.ts)
+create table public.modules_catalog (
+  slug text primary key,
+  name text not null,
+  short text,
+  description text,
+  price_monthly numeric,
+  status text default 'available',   -- available, coming_soon
+  external_url text,
+  updated_at timestamptz default now()
+);
+
+-- Tenant: vínculo com plano e Asaas
+alter table public.tenants
+  add column plan_id uuid references public.plans(id),
+  add column asaas_customer_id text,
+  add column asaas_subscription_id text,
+  add column subscription_status text default 'trial',  -- trial, active, overdue, cancelled
+  add column trial_ends_at timestamptz,
+  add column current_period_end timestamptz;
+
+-- Histórico de pagamentos
+create table public.payments (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid references public.tenants(id) on delete cascade,
+  asaas_payment_id text unique,
+  amount numeric not null,
+  status text not null,              -- PENDING, CONFIRMED, OVERDUE, REFUNDED
+  billing_type text,                 -- PIX, BOLETO, CREDIT_CARD
+  due_date date,
+  paid_at timestamptz,
+  invoice_url text,
+  created_at timestamptz default now()
+);
+
+-- Auditoria de ações admin
+create table public.admin_audit (
+  id uuid primary key default gen_random_uuid(),
+  admin_user_id uuid references auth.users(id),
+  action text not null,              -- module_activated, plan_changed, trial_granted...
+  target_tenant_id uuid,
+  metadata jsonb,
+  created_at timestamptz default now()
+);
+
+-- RLS: admin lê tudo, cliente só vê o seu
+-- (políticas usando has_role(auth.uid(), 'admin'))
+
+-- RPC pra mudança de plano (propaga max_units e módulos)
+create or replace function public.admin_set_plan(_tenant uuid, _plan uuid)
+returns void security definer ...
+```
+
+Você roda esse SQL uma vez. Depois é tudo via painel.
+
+---
+
+## Detalhes técnicos
+
+### Server functions (TanStack `createServerFn`)
+
+- `getAdminMetrics()` — métricas do dashboard
+- `listTenants(filter)` — lista clientes com paginação
+- `getTenantDetail(id)` — detalhe completo
+- `setTenantPlan(tenantId, planId)` — chama RPC + atualiza assinatura no Asaas
+- `toggleModule(tenantId, moduleSlug, status)` — ativa/desativa módulo manual
+- `grantManualTrial(tenantId, days)` — libera trial extra
+- `cancelSubscription(tenantId)` — cancela no Asaas e marca tenant
+- `createSubscription(tenantId, planSlug)` — cria customer+subscription no Asaas com 7 dias trial
+- Todas com `requireSupabaseAuth` + check `has_role('admin')` exceto `createSubscription` (chamada no signup)
+
+### Webhook Asaas
+
+`src/routes/api/public/asaas-webhook.ts` — server route público:
+- Verifica assinatura HMAC
+- Eventos tratados: `PAYMENT_CONFIRMED`, `PAYMENT_OVERDUE`, `PAYMENT_REFUNDED`, `SUBSCRIPTION_CANCELLED`
+- Atualiza `tenants.subscription_status` e insere em `payments`
+- Se overdue > 7 dias → bloqueia módulos via `tenant_module_access.status = 'blocked'`
+
+### Cliente Asaas
+
+`src/server/asaas.server.ts` — wrapper REST com `process.env.ASAAS_API_KEY`. Endpoints usados:
+- `POST /customers` — cria cliente
+- `POST /subscriptions` — cria assinatura recorrente
+- `GET /payments?subscription=...` — lista cobranças
+- `DELETE /subscriptions/{id}` — cancela
+- `PUT /subscriptions/{id}` — troca plano
+
+### Layout admin
+
+- `src/routes/_admin.tsx` — layout protegido (admin only)
+- `src/routes/_admin/admin.tsx` → `/admin` (dashboard)
+- `src/routes/_admin/admin.clientes.tsx` etc.
+- `src/components/admin/AdminSidebar.tsx` — sidebar visualmente diferente (escura, ícones distintos, badge "SISTEMA")
+- Move `admin.novidades.tsx` → `_admin/admin.novidades.tsx`
+
+---
+
+## Ordem de implementação
+
+**Etapa A — Esqueleto admin (sem Asaas)**
+1. SQL: `plans`, `modules_catalog`, alterar `tenants`, `payments`, `admin_audit`, RLS, RPC
+2. Layout `_admin` + sidebar + dashboard
+3. Página clientes (lista + detalhe + toggle de módulos manual)
+4. Página planos + módulos catálogo
+5. Página usuários + financeiro vazio
+6. Move admin.novidades pro novo layout
+
+✅ **Aqui você já consegue gerenciar tudo pelo painel sem SQL.**
+
+**Etapa B — Asaas**
+7. Wrapper `asaas.server.ts` + secret `ASAAS_API_KEY`
+8. Webhook `/api/public/asaas-webhook` (sandbox primeiro)
+9. Server function `createSubscription` no fluxo de signup
+10. Página financeiro funcional (lista pagamentos)
+11. Botão "ver fatura" no detalhe do cliente
+12. Job de bloqueio automático de inadimplentes (cron via pg_cron)
+
+✅ **Aqui o sistema cobra sozinho.**
+
+**Etapa C — Polish**
+13. Email de boas-vindas, fim de trial, cobrança vencida
+14. Página de "minha assinatura" pro cliente (`/app/configuracoes/assinatura`)
+15. Métricas avançadas (churn, LTV, cohort)
+
+---
+
+## O que você precisa providenciar
+
+1. **Antes da Etapa A**: nada. Eu já começo.
+2. **Antes da Etapa B**: criar conta em asaas.com (sandbox grátis), gerar API key e me passar.
+
+## Riscos e mitigação
+
+- **Asaas fora do ar** → webhook com retry; cliente não fica bloqueado por instabilidade.
+- **Cliente reclama de cobrança indevida** → painel admin tem botão "estornar" que chama Asaas.
+- **Você esquece de pagar uma conta Asaas** → módulos continuam ativos pros clientes (status local não depende da conexão Asaas em runtime).
+- **Sem `process.env` no Cloudflare Worker pra rotas isomórficas** → toda chamada Asaas roda em `createServerFn` ou server route, nunca em loader/componente.
+
+---
+
+## Resumo
+
+Etapa A entrega o painel admin completo (você gerencia tudo visualmente, fim do SQL na mão).
+Etapa B liga o Asaas (cobrança automática mensal, trial 7 dias, bloqueio automático).
+Etapa C é refinamento.
+
+Aprova começar pela Etapa A?
