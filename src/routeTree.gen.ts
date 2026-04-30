@@ -20,6 +20,7 @@ import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/ap
 import { Route as AdminAdminIndexRouteImport } from './routes/_admin/admin.index'
 import { Route as AppsSlugPreviewRouteImport } from './routes/apps.$slug.preview'
 import { Route as AuthenticatedAppProgramasRouteImport } from './routes/_authenticated/app.programas'
+import { Route as AuthenticatedAppNovidadesRouteImport } from './routes/_authenticated/app.novidades'
 import { Route as AuthenticatedAppConfiguracoesRouteImport } from './routes/_authenticated/app.configuracoes'
 import { Route as AuthenticatedAppCatalogoRouteImport } from './routes/_authenticated/app.catalogo'
 import { Route as AdminAdminUsuariosRouteImport } from './routes/_admin/admin.usuarios'
@@ -84,6 +85,12 @@ const AuthenticatedAppProgramasRoute =
   AuthenticatedAppProgramasRouteImport.update({
     id: '/programas',
     path: '/programas',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppNovidadesRoute =
+  AuthenticatedAppNovidadesRouteImport.update({
+    id: '/novidades',
+    path: '/novidades',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
 const AuthenticatedAppConfiguracoesRoute =
@@ -160,6 +167,7 @@ export interface FileRoutesByFullPath {
   '/admin/usuarios': typeof AdminAdminUsuariosRoute
   '/app/catalogo': typeof AuthenticatedAppCatalogoRoute
   '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRouteWithChildren
+  '/app/novidades': typeof AuthenticatedAppNovidadesRoute
   '/app/programas': typeof AuthenticatedAppProgramasRouteWithChildren
   '/apps/$slug/preview': typeof AppsSlugPreviewRoute
   '/admin/': typeof AdminAdminIndexRoute
@@ -182,6 +190,7 @@ export interface FileRoutesByTo {
   '/admin/usuarios': typeof AdminAdminUsuariosRoute
   '/app/catalogo': typeof AuthenticatedAppCatalogoRoute
   '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRouteWithChildren
+  '/app/novidades': typeof AuthenticatedAppNovidadesRoute
   '/app/programas': typeof AuthenticatedAppProgramasRouteWithChildren
   '/apps/$slug/preview': typeof AppsSlugPreviewRoute
   '/admin': typeof AdminAdminIndexRoute
@@ -207,6 +216,7 @@ export interface FileRoutesById {
   '/_admin/admin/usuarios': typeof AdminAdminUsuariosRoute
   '/_authenticated/app/catalogo': typeof AuthenticatedAppCatalogoRoute
   '/_authenticated/app/configuracoes': typeof AuthenticatedAppConfiguracoesRouteWithChildren
+  '/_authenticated/app/novidades': typeof AuthenticatedAppNovidadesRoute
   '/_authenticated/app/programas': typeof AuthenticatedAppProgramasRouteWithChildren
   '/apps/$slug/preview': typeof AppsSlugPreviewRoute
   '/_admin/admin/': typeof AdminAdminIndexRoute
@@ -231,6 +241,7 @@ export interface FileRouteTypes {
     | '/admin/usuarios'
     | '/app/catalogo'
     | '/app/configuracoes'
+    | '/app/novidades'
     | '/app/programas'
     | '/apps/$slug/preview'
     | '/admin/'
@@ -253,6 +264,7 @@ export interface FileRouteTypes {
     | '/admin/usuarios'
     | '/app/catalogo'
     | '/app/configuracoes'
+    | '/app/novidades'
     | '/app/programas'
     | '/apps/$slug/preview'
     | '/admin'
@@ -277,6 +289,7 @@ export interface FileRouteTypes {
     | '/_admin/admin/usuarios'
     | '/_authenticated/app/catalogo'
     | '/_authenticated/app/configuracoes'
+    | '/_authenticated/app/novidades'
     | '/_authenticated/app/programas'
     | '/apps/$slug/preview'
     | '/_admin/admin/'
@@ -373,6 +386,13 @@ declare module '@tanstack/react-router' {
       path: '/programas'
       fullPath: '/app/programas'
       preLoaderRoute: typeof AuthenticatedAppProgramasRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/novidades': {
+      id: '/_authenticated/app/novidades'
+      path: '/novidades'
+      fullPath: '/app/novidades'
+      preLoaderRoute: typeof AuthenticatedAppNovidadesRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
     '/_authenticated/app/configuracoes': {
@@ -511,6 +531,7 @@ const AuthenticatedAppProgramasRouteWithChildren =
 interface AuthenticatedAppRouteChildren {
   AuthenticatedAppCatalogoRoute: typeof AuthenticatedAppCatalogoRoute
   AuthenticatedAppConfiguracoesRoute: typeof AuthenticatedAppConfiguracoesRouteWithChildren
+  AuthenticatedAppNovidadesRoute: typeof AuthenticatedAppNovidadesRoute
   AuthenticatedAppProgramasRoute: typeof AuthenticatedAppProgramasRouteWithChildren
 }
 
@@ -518,6 +539,7 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppCatalogoRoute: AuthenticatedAppCatalogoRoute,
   AuthenticatedAppConfiguracoesRoute:
     AuthenticatedAppConfiguracoesRouteWithChildren,
+  AuthenticatedAppNovidadesRoute: AuthenticatedAppNovidadesRoute,
   AuthenticatedAppProgramasRoute: AuthenticatedAppProgramasRouteWithChildren,
 }
 
