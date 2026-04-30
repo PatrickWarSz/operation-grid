@@ -20,6 +20,7 @@ import {
   Menu,
   X,
   Sparkles,
+  ShieldCheck,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated")({
