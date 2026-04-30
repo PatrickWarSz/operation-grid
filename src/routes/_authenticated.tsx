@@ -19,7 +19,7 @@ import {
   Moon,
   Menu,
   X,
-  ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated")({
