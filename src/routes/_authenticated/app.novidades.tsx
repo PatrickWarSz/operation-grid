@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useWorkspace } from "@/hooks/useWorkspace";
+
 import { Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/app/novidades")({
@@ -28,7 +28,6 @@ const CAT_LABEL: Record<string, string> = {
 };
 
 function NovidadesPage() {
-  const { markAllRead } = useWorkspace();
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -41,9 +40,8 @@ function NovidadesPage() {
         .limit(50);
       setItems((data ?? []) as Item[]);
       setLoading(false);
-      markAllRead?.();
     })();
-  }, [markAllRead]);
+  }, []);
 
   return (
     <div className="max-w-3xl mx-auto">
