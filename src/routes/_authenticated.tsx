@@ -55,6 +55,7 @@ function AuthenticatedLayout() {
 const NAV = [
   { to: "/app", label: "Início", icon: Home, exact: true },
   { to: "/app/programas", label: "Programas", icon: LayoutGrid, exact: false },
+  { to: "/app/novidades", label: "Novidades", icon: Sparkles, exact: false, badge: "unread" as const },
   { to: "/app/catalogo", label: "Catálogo", icon: Store, exact: false },
   { to: "/app/configuracoes", label: "Configurações", icon: Settings, exact: false },
 ] as const;
