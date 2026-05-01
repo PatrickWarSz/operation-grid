@@ -1,6 +1,13 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { MODULES } from "@/lib/modules";
 import {
   DEFAULT_BRANDING,
   applyWorkspaceBranding,
@@ -9,6 +16,12 @@ import {
   type TenantBranding,
   type ThemeMode,
 } from "@/lib/workspace-theme";
+
+/**
+ * MOCK WORKSPACE — sem backend.
+ * Estado local com dados fictícios. Branding e profile persistem em
+ * localStorage para sobreviver a refresh.
+ */
 
 export type ModuleStatus = "active" | "trial" | "blocked";
 
@@ -62,212 +75,214 @@ interface WorkspaceContextValue {
 
 const WorkspaceContext = createContext<WorkspaceContextValue | undefined>(undefined);
 
-// helper para escapar tipagem do Supabase quando a tabela é "opcional" (criada por SQL externo)
-type AnyClient = {
-  from: (t: string) => any;
-  rpc: (fn: string, args?: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>;
-};
+const PROFILE_KEY = "mock:profile";
+const BRANDING_KEY = "mock:branding";
+const ACCESS_KEY = "mock:access";
+const READ_KEY = "mock:announcement_reads";
+
+const MOCK_TENANT_ID = "tenant-mock-1";
+const MOCK_TENANT_NAME = "Acme Ltda";
+
+const MOCK_ANNOUNCEMENTS: AnnouncementRow[] = [
+  {
+    id: "ann-1",
+    title: "Novo: Módulo de Devoluções em beta",
+    body_md: "Já está disponível para todos os clientes a primeira versão do programa Devoluções Pro. Teste por 7 dias.",
+    category: "beta",
+    module_id: null,
+    media_url: null,
+    media_type: null,
+    target_tenant_id: null,
+    published_at: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
+  },
+  {
+    id: "ann-2",
+    title: "Atualização do Estoque Pro",
+    body_md: "Agora com suporte a múltiplas filiais e relatórios consolidados.",
+    category: "feature",
+    module_id: "estoque",
+    media_url: null,
+    media_type: null,
+    target_tenant_id: null,
+    published_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
+  },
+  {
+    id: "ann-3",
+    title: "Correção: cálculo de custo médio",
+    body_md: "Ajustamos o cálculo de custo médio quando há transferências entre filiais.",
+    category: "fix",
+    module_id: null,
+    media_url: null,
+    media_type: null,
+    target_tenant_id: null,
+    published_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
+  },
+];
+
+function buildDefaultAccess(): ModuleAccessRow[] {
+  // Por padrão, libera o primeiro módulo como ativo, segundo em trial e o resto bloqueado.
+  return MODULES.map((m, idx) => {
+    const status: ModuleStatus = idx === 0 ? "active" : idx === 1 ? "trial" : "blocked";
+    const trialStart = status === "trial" ? new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString() : null;
+    const trialEnd = status === "trial" ? new Date(Date.now() + 1000 * 60 * 60 * 24 * 5).toISOString() : null;
+    return {
+      module_id: m.id,
+      status,
+      trial_started_at: trialStart,
+      trial_ends_at: trialEnd,
+      effective_status: status,
+      trial_days_left: status === "trial" ? 5 : null,
+    };
+  });
+}
+
+function readJSON<T>(key: string, fallback: T): T {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const raw = window.localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeJSON(key: string, value: unknown) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    /* noop */
+  }
+}
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const sb = supabase as unknown as AnyClient;
 
   const [loading, setLoading] = useState(true);
-  const [tenantId, setTenantId] = useState<string | null>(null);
-  const [tenantName, setTenantName] = useState<string>("");
-  const [fullName, setFullName] = useState<string | null>(null);
   const [profileMeta, setProfileMeta] = useState<ProfileMeta>({
-    segment: null, company_size: null, main_pain: null, onboarded_at: null,
+    segment: null,
+    company_size: null,
+    main_pain: null,
+    onboarded_at: null,
   });
+  const [fullName, setFullName] = useState<string | null>(null);
   const [branding, setBranding] = useState<TenantBranding>(DEFAULT_BRANDING);
   const [accessRows, setAccessRows] = useState<ModuleAccessRow[]>([]);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [announcements, setAnnouncements] = useState<AnnouncementRow[]>([]);
-  const [unreadIds, setUnreadIds] = useState<Set<string>>(new Set());
+  const [announcements] = useState<AnnouncementRow[]>(MOCK_ANNOUNCEMENTS);
+  const [readIds, setReadIds] = useState<Set<string>>(new Set());
 
-  const loadAccess = useCallback(async (tId: string) => {
-    const { data } = await sb.from("v_module_access_effective").select("*").eq("tenant_id", tId);
-    setAccessRows((data as ModuleAccessRow[]) ?? []);
-  }, [sb]);
-
-  const loadAnnouncements = useCallback(async () => {
-    if (!user) return;
-    const { data: rows } = await sb
-      .from("announcements")
-      .select("*")
-      .order("published_at", { ascending: false })
-      .limit(50);
-    const list = (rows as AnnouncementRow[]) ?? [];
-    setAnnouncements(list);
-
-    if (list.length > 0) {
-      const { data: reads } = await sb
-        .from("announcement_reads")
-        .select("announcement_id")
-        .eq("user_id", user.id);
-      const readSet = new Set((reads ?? []).map((r: { announcement_id: string }) => r.announcement_id));
-      setUnreadIds(new Set(list.filter((a) => !readSet.has(a.id)).map((a) => a.id)));
-    } else {
-      setUnreadIds(new Set());
-    }
-  }, [sb, user]);
-
+  // Bootstrap mock data
   useEffect(() => {
     if (!user) return;
-    let cancelled = false;
 
-    (async () => {
-      // 1) profile + tenant + meta de onboarding
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("tenant_id, full_name, segment, company_size, main_pain, onboarded_at, tenants(name)")
-        .eq("id", user.id)
-        .maybeSingle();
+    const storedProfile = readJSON<{ profile: ProfileMeta; full_name: string | null }>(PROFILE_KEY, {
+      profile: { segment: null, company_size: null, main_pain: null, onboarded_at: null },
+      full_name: null,
+    });
+    setProfileMeta(storedProfile.profile);
+    setFullName(storedProfile.full_name);
 
-      if (cancelled) return;
+    const storedBranding = readJSON<TenantBranding>(BRANDING_KEY, { ...DEFAULT_BRANDING });
+    const stored = getStoredThemeMode();
+    if (stored) storedBranding.theme_mode = stored;
+    setBranding(storedBranding);
 
-      const p = profile as unknown as {
-        tenant_id: string | null;
-        full_name: string | null;
-        segment: string | null;
-        company_size: string | null;
-        main_pain: string | null;
-        onboarded_at: string | null;
-        tenants: { name: string } | null;
-      } | null;
+    const storedAccess = readJSON<ModuleAccessRow[] | null>(ACCESS_KEY, null);
+    setAccessRows(storedAccess ?? buildDefaultAccess());
 
-      const tName = p?.tenants?.name ?? "";
-      const tId = p?.tenant_id ?? null;
-      setTenantName(tName);
-      setTenantId(tId);
-      setFullName(p?.full_name ?? null);
-      setProfileMeta({
-        segment: p?.segment ?? null,
-        company_size: p?.company_size ?? null,
-        main_pain: p?.main_pain ?? null,
-        onboarded_at: p?.onboarded_at ?? null,
-      });
+    const storedReads = readJSON<string[]>(READ_KEY, []);
+    setReadIds(new Set(storedReads));
 
-      // 2) branding
-      let initialBranding: TenantBranding = { ...DEFAULT_BRANDING };
-      if (tId) {
-        const { data: brand } = await sb
-          .from("tenant_branding")
-          .select("logo_url, primary_color, accent_color, theme_mode, workspace_name")
-          .eq("tenant_id", tId)
-          .maybeSingle();
-        if (brand) {
-          initialBranding = {
-            logo_url: brand.logo_url ?? null,
-            primary_color: brand.primary_color ?? DEFAULT_BRANDING.primary_color,
-            accent_color: brand.accent_color ?? DEFAULT_BRANDING.accent_color,
-            theme_mode: (brand.theme_mode as ThemeMode) ?? DEFAULT_BRANDING.theme_mode,
-            workspace_name: brand.workspace_name ?? null,
-          };
-        }
-      }
-      const stored = getStoredThemeMode();
-      if (stored) initialBranding.theme_mode = stored;
-      setBranding(initialBranding);
+    setLoading(false);
+  }, [user]);
 
-      // 3) access (via view efetiva)
-      if (tId) await loadAccess(tId);
-
-      // 4) admin role
-      const { data: roleRow } = await sb
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .eq("role", "admin")
-        .maybeSingle();
-      setIsAdmin(!!roleRow);
-
-      // 5) announcements
-      await loadAnnouncements();
-
-      if (!cancelled) setLoading(false);
-    })();
-
-    return () => { cancelled = true; };
-  }, [user, sb, loadAccess, loadAnnouncements]);
-
-  useEffect(() => { applyWorkspaceBranding(branding); }, [branding]);
+  useEffect(() => {
+    applyWorkspaceBranding(branding);
+  }, [branding]);
 
   const accessMap = useMemo(
     () => new Map(accessRows.map((a) => [a.module_id, a.effective_status])),
     [accessRows],
   );
 
+  const unreadIds = useMemo(() => {
+    return new Set(announcements.filter((a) => !readIds.has(a.id)).map((a) => a.id));
+  }, [announcements, readIds]);
+
   const setMode = (mode: ThemeMode) => {
     setStoredThemeMode(mode);
-    setBranding((b) => ({ ...b, theme_mode: mode }));
+    setBranding((b) => {
+      const next = { ...b, theme_mode: mode };
+      writeJSON(BRANDING_KEY, next);
+      return next;
+    });
   };
 
   const saveBranding = async (patch: Partial<TenantBranding>) => {
-    const next = { ...branding, ...patch };
-    setBranding(next);
-    if (!tenantId) return;
-    await sb.from("tenant_branding").upsert(
-      {
-        tenant_id: tenantId,
-        logo_url: next.logo_url,
-        primary_color: next.primary_color,
-        accent_color: next.accent_color,
-        theme_mode: next.theme_mode,
-        workspace_name: next.workspace_name,
-      },
-      { onConflict: "tenant_id" },
-    );
+    setBranding((b) => {
+      const next = { ...b, ...patch };
+      writeJSON(BRANDING_KEY, next);
+      return next;
+    });
   };
 
   const saveProfile = async (patch: Partial<ProfileMeta> & { full_name?: string }) => {
-    if (!user) return;
-    const update: Record<string, unknown> = {};
-    if (patch.segment !== undefined) update.segment = patch.segment;
-    if (patch.company_size !== undefined) update.company_size = patch.company_size;
-    if (patch.main_pain !== undefined) update.main_pain = patch.main_pain;
-    if (patch.onboarded_at !== undefined) update.onboarded_at = patch.onboarded_at;
-    if (patch.full_name !== undefined) update.full_name = patch.full_name;
-
-    await supabase.from("profiles").update(update).eq("id", user.id);
-    setProfileMeta((m) => ({
-      segment: patch.segment ?? m.segment,
-      company_size: patch.company_size ?? m.company_size,
-      main_pain: patch.main_pain ?? m.main_pain,
-      onboarded_at: patch.onboarded_at ?? m.onboarded_at,
-    }));
+    setProfileMeta((m) => {
+      const next: ProfileMeta = {
+        segment: patch.segment !== undefined ? patch.segment : m.segment,
+        company_size: patch.company_size !== undefined ? patch.company_size : m.company_size,
+        main_pain: patch.main_pain !== undefined ? patch.main_pain : m.main_pain,
+        onboarded_at: patch.onboarded_at !== undefined ? patch.onboarded_at : m.onboarded_at,
+      };
+      const newFullName = patch.full_name !== undefined ? patch.full_name : fullName;
+      writeJSON(PROFILE_KEY, { profile: next, full_name: newFullName });
+      return next;
+    });
     if (patch.full_name !== undefined) setFullName(patch.full_name);
   };
 
   const startTrial = async (moduleId: string) => {
-    const { error } = await sb.rpc("start_module_trial", { _module_id: moduleId });
-    if (error) throw error;
-    if (tenantId) await loadAccess(tenantId);
+    setAccessRows((rows) => {
+      const next = rows.map((r) =>
+        r.module_id === moduleId
+          ? {
+              ...r,
+              status: "trial" as ModuleStatus,
+              effective_status: "trial" as ModuleStatus,
+              trial_started_at: new Date().toISOString(),
+              trial_ends_at: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString(),
+              trial_days_left: 7,
+            }
+          : r,
+      );
+      writeJSON(ACCESS_KEY, next);
+      return next;
+    });
   };
 
-  const markAnnouncementRead = async (announcementId: string) => {
-    if (!user) return;
-    setUnreadIds((s) => {
+  const markAnnouncementRead = async (id: string) => {
+    setReadIds((s) => {
       const n = new Set(s);
-      n.delete(announcementId);
+      n.add(id);
+      writeJSON(READ_KEY, Array.from(n));
       return n;
     });
-    await sb.from("announcement_reads").upsert(
-      { user_id: user.id, announcement_id: announcementId },
-      { onConflict: "user_id,announcement_id" },
-    );
+  };
+
+  const refreshAnnouncements = async () => {
+    /* noop em mock */
   };
 
   return (
     <WorkspaceContext.Provider
       value={{
         loading,
-        tenantId,
-        tenantName,
+        tenantId: MOCK_TENANT_ID,
+        tenantName: MOCK_TENANT_NAME,
         fullName,
         profileMeta,
         branding,
-        isAdmin,
+        isAdmin: true, // Mock: usuário sempre é admin para ver o painel.
         access: accessMap,
         accessRows,
         announcements,
@@ -277,7 +292,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         saveProfile,
         startTrial,
         markAnnouncementRead,
-        refreshAnnouncements: loadAnnouncements,
+        refreshAnnouncements,
       }}
     >
       {children}

@@ -1,44 +1,68 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import type { Session, User } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+
+/**
+ * MOCK AUTH — sem backend.
+ * O usuário "loga" via formulário (qualquer email/senha) e é guardado em
+ * localStorage para sobreviver a refresh. Backend real será plugado depois
+ * fora deste template.
+ */
+
+export interface MockUser {
+  id: string;
+  email: string;
+}
 
 interface AuthContextValue {
-  user: User | null;
-  session: Session | null;
+  user: MockUser | null;
   loading: boolean;
+  signIn: (email?: string) => void;
   signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+const STORAGE_KEY = "mock:user";
+
+const DEFAULT_USER: MockUser = {
+  id: "mock-user-1",
+  email: "voce@empresa.com",
+};
+
+function readStored(): MockUser | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as MockUser) : null;
+  } catch {
+    return null;
+  }
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<MockUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 1) listener PRIMEIRO (nunca async dentro do callback)
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      setSession(newSession);
-      setUser(newSession?.user ?? null);
-    });
-
-    // 2) então busca a sessão atual
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => sub.subscription.unsubscribe();
+    setUser(readStored());
+    setLoading(false);
   }, []);
 
+  const signIn = (email?: string) => {
+    const u: MockUser = email ? { id: "mock-user-1", email } : DEFAULT_USER;
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(u));
+    }
+    setUser(u);
+  };
+
   const signOut = async () => {
-    await supabase.auth.signOut();
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(STORAGE_KEY);
+    }
+    setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );

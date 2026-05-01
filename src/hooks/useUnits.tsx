@@ -1,18 +1,20 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
-import { useWorkspace } from "@/hooks/useWorkspace";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 
 /**
- * Multi-unidade (Filiais).
- *
- * - Tenant = empresa, Unit = filial (1:N).
- * - Acesso via tabela user_units (RLS já garante que o user só vê suas units).
- * - Unit ativa persiste em localStorage["hub:active_unit"].
- * - max_units vem da função public.tenant_max_units(_tenant) (definida no SQL do plano).
+ * MOCK UNITS — sem backend.
+ * Lista de filiais fictícias guardadas em localStorage.
  */
 
 const ACTIVE_UNIT_KEY = "hub:active_unit";
+const UNITS_KEY = "mock:units";
 
 export interface UnitRow {
   id: string;
@@ -31,67 +33,87 @@ interface UnitsContextValue {
   activeUnit: UnitRow | null;
   activeUnitId: string | null;
   setActiveUnit: (unitId: string) => void;
-  maxUnits: number; // Infinity = ilimitado
+  maxUnits: number;
   canCreateUnit: boolean;
   refresh: () => Promise<void>;
+  createUnit: (name: string) => Promise<void>;
+  deleteUnit: (id: string) => Promise<void>;
 }
 
 const UnitsContext = createContext<UnitsContextValue | undefined>(undefined);
 
-type AnyClient = {
-  from: (t: string) => any;
-  rpc: (fn: string, args?: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>;
-};
+const DEFAULT_UNITS: UnitRow[] = [
+  {
+    id: "unit-matriz",
+    tenant_id: "tenant-mock-1",
+    name: "Matriz",
+    slug: "matriz",
+    is_primary: true,
+    address: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: "unit-filial-sp",
+    tenant_id: "tenant-mock-1",
+    name: "Filial São Paulo",
+    slug: "filial-sao-paulo",
+    is_primary: false,
+    address: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+];
+
+function readUnits(): UnitRow[] {
+  if (typeof window === "undefined") return DEFAULT_UNITS;
+  try {
+    const raw = window.localStorage.getItem(UNITS_KEY);
+    return raw ? (JSON.parse(raw) as UnitRow[]) : DEFAULT_UNITS;
+  } catch {
+    return DEFAULT_UNITS;
+  }
+}
+
+function writeUnits(list: UnitRow[]) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(UNITS_KEY, JSON.stringify(list));
+}
+
+function slugify(s: string) {
+  return (
+    s
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "")
+      .slice(0, 40) || "filial"
+  );
+}
 
 export function UnitsProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
-  const { tenantId, isAdmin } = useWorkspace();
-  const sb = supabase as unknown as AnyClient;
-
   const [loading, setLoading] = useState(true);
   const [units, setUnits] = useState<UnitRow[]>([]);
   const [activeUnitId, setActiveUnitIdState] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
     return window.localStorage.getItem(ACTIVE_UNIT_KEY);
   });
-  const [maxUnits, setMaxUnits] = useState<number>(1);
+  const maxUnits = 5; // mock: limite fictício
 
   const load = useCallback(async () => {
-    if (!user || !tenantId) {
-      setUnits([]);
-      setLoading(false);
-      return;
-    }
     setLoading(true);
-
-    // RLS já filtra: user só vê units onde tem user_units.
-    const { data: unitsData } = await sb
-      .from("units")
-      .select("*")
-      .eq("tenant_id", tenantId)
-      .order("is_primary", { ascending: false })
-      .order("name", { ascending: true });
-
-    const list = (unitsData as UnitRow[]) ?? [];
-    setUnits(list);
-
-    // max_units do plano
-    const { data: maxData } = await sb.rpc("tenant_max_units", { _tenant: tenantId });
-    const max = typeof maxData === "number" ? maxData : 1;
-    setMaxUnits(max <= 0 ? Infinity : max);
-
+    setUnits(readUnits());
     setLoading(false);
-  }, [sb, user, tenantId]);
+  }, []);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  // Garante que activeUnitId seja válido. Fallback: primary, depois primeira.
   useEffect(() => {
     if (loading || units.length === 0) return;
-    const stored = activeUnitId;
-    const valid = stored && units.find((u) => u.id === stored);
+    const valid = activeUnitId && units.find((u) => u.id === activeUnitId);
     if (valid) return;
     const fallback = units.find((u) => u.is_primary) ?? units[0];
     if (fallback) {
@@ -114,7 +136,31 @@ export function UnitsProvider({ children }: { children: ReactNode }) {
     [units, activeUnitId],
   );
 
-  const canCreateUnit = isAdmin && units.length < maxUnits;
+  const canCreateUnit = units.length < maxUnits;
+
+  const createUnit = async (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const newUnit: UnitRow = {
+      id: `unit-${Date.now()}`,
+      tenant_id: "tenant-mock-1",
+      name: trimmed,
+      slug: slugify(trimmed),
+      is_primary: false,
+      address: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    const next = [...units, newUnit];
+    setUnits(next);
+    writeUnits(next);
+  };
+
+  const deleteUnit = async (id: string) => {
+    const next = units.filter((u) => u.id !== id);
+    setUnits(next);
+    writeUnits(next);
+  };
 
   return (
     <UnitsContext.Provider
@@ -127,6 +173,8 @@ export function UnitsProvider({ children }: { children: ReactNode }) {
         maxUnits,
         canCreateUnit,
         refresh: load,
+        createUnit,
+        deleteUnit,
       }}
     >
       {children}
