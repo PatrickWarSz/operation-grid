@@ -65,8 +65,6 @@ export const MODULES: AppModule[] = [
     icon: Boxes,
     status: "available",
     price: 49,
-    externalUrl: "https://estoquemat.lovable.app/app/estoque",
-    landingUrl: "https://estoquemat.lovable.app/",
   },
   {
     id: "financeiro-empresa",
