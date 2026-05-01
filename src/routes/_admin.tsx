@@ -33,48 +33,20 @@ function AdminLayout() {
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // MOCK: sem checagem real de admin. Apenas exige estar "logado".
   useEffect(() => {
     if (loading) return;
     if (!user) {
       navigate({ to: "/login", search: { redirect: location.pathname } as any });
-      return;
     }
-    void (async () => {
-      const { data } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .eq("role", "admin")
-        .maybeSingle();
-      setIsAdmin(!!data);
-    })();
   }, [loading, user, navigate, location.pathname]);
 
-  if (loading || isAdmin === null) {
+  if (loading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-400">
-        <span className="text-sm">verificando permissões...</span>
-      </div>
-    );
-  }
-
-  if (!isAdmin) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-zinc-950 text-zinc-100 px-6">
-        <ShieldCheck className="h-12 w-12 text-zinc-600 mb-4" />
-        <h1 className="text-xl font-semibold">Acesso restrito</h1>
-        <p className="text-sm text-zinc-400 mt-2 text-center max-w-md">
-          Este painel é exclusivo para administradores do sistema.
-        </p>
-        <Link
-          to="/app"
-          className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-sm transition"
-        >
-          <ArrowLeft className="h-4 w-4" /> Voltar pro workspace
-        </Link>
+        <span className="text-sm">carregando painel...</span>
       </div>
     );
   }
