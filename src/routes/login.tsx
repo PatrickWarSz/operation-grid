@@ -3,11 +3,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, ArrowRight, ArrowLeft, Hexagon, AlertCircle, Sparkles } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, ArrowLeft, Hexagon, Sparkles } from "lucide-react";
 import { AuthBackdrop } from "@/components/auth/AuthBackdrop";
-import { supabase } from "@/integrations/supabase/client";
 import { MODULES } from "@/lib/modules";
-import { isAllowedSatelliteUrl, buildSatelliteUrl } from "@/lib/satellite-handoff";
+import { useAuth } from "@/hooks/useAuth";
 
 type LoginSearch = { intent?: string; redirect?: string };
 
@@ -27,74 +26,31 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const navigate = useNavigate();
+  const { signIn } = useAuth();
   const search = Route.useSearch();
   const intentModule = search.intent ? MODULES.find((m) => m.id === search.intent) : undefined;
 
-  // Aceita redirect EXTERNO se for satélite whitelisted, ou path interno.
-  // Defensivo contra open redirect: qualquer URL absoluta não-whitelisted é descartada.
-  const rawRedirect = search.redirect;
-  const isExternal = !!rawRedirect && /^https?:\/\//i.test(rawRedirect);
-  const externalRedirect = isExternal && rawRedirect && isAllowedSatelliteUrl(rawRedirect) ? rawRedirect : null;
-  const internalRedirect =
-    !isExternal && rawRedirect
-      ? rawRedirect
-      : intentModule
-      ? `/app/programas/${intentModule.id}`
-      : "/app";
-
   const [showPwd, setShowPwd] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const buildInternalTarget = () =>
-    `${internalRedirect}${
-      intentModule ? (internalRedirect.includes("?") ? "&" : "?") + "intent=" + intentModule.id : ""
-    }`;
-
-  const onSubmit = async (e: React.FormEvent) => {
+  const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (error) {
-      setError(
-        error.message === "Invalid login credentials"
-          ? "E-mail ou senha incorretos."
-          : error.message
-      );
-      return;
-    }
-    // Redirect externo (satélite): handoff via fragment com access_token/refresh_token.
-    if (externalRedirect && data.session) {
-      window.location.href = buildSatelliteUrl(externalRedirect, data.session);
-      return;
-    }
-    // hard nav garante que o workspace leia ?intent= do URL
-    window.location.href = buildInternalTarget();
+    // MOCK: não valida nada. Apenas salva o "user" e redireciona.
+    signIn(email || undefined);
+    const target = intentModule ? `/app/programas/${intentModule.id}` : "/app";
+    navigate({ to: target });
   };
 
-  const onGoogle = async () => {
-    setError(null);
-    // OAuth Google: se vier de satélite, manda Google redirecionar direto pro
-    // satélite (handoff de fragment é feito pelo próprio Supabase nesse caso).
-    const oauthRedirectTo = externalRedirect
-      ? externalRedirect
-      : `${window.location.origin}${buildInternalTarget()}`;
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: oauthRedirectTo },
-    });
-    if (error) setError(error.message);
+  const onGoogle = () => {
+    signIn();
+    navigate({ to: "/app" });
   };
 
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center px-4 py-10 overflow-hidden">
       <AuthBackdrop />
 
-      {/* topo */}
       <div className="absolute top-0 inset-x-0 px-6 py-5 flex items-center justify-between z-10">
         <Link to="/" className="flex items-center gap-2 group">
           <Hexagon className="h-6 w-6 text-primary fill-primary/10 transition-all group-hover:fill-primary/20" />
@@ -111,13 +67,12 @@ function LoginPage() {
         </Link>
       </div>
 
-      {/* card centralizado */}
       <div className="relative z-10 w-full max-w-md">
         {intentModule && (
           <div className="mb-4 rounded-xl border border-primary/40 bg-primary/10 p-3 flex items-center gap-2.5 backdrop-blur-xl">
             <Sparkles className="h-4 w-4 text-primary shrink-0" />
             <p className="text-xs text-foreground">
-              Entre para acessar <strong>{intentModule.name}</strong>. Já é nosso cliente? Sua conta Hub libera o programa.
+              Entre para acessar <strong>{intentModule.name}</strong>.
             </p>
           </div>
         )}
@@ -125,24 +80,19 @@ function LoginPage() {
           <div className="text-center mb-7">
             <h1 className="font-display text-3xl font-semibold tracking-tight">Entrar</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              {intentModule ? `Acesse sua conta para ativar ${intentModule.name}.` : "Acesse o Hub e centralize sua operação."}
+              {intentModule
+                ? `Acesse sua conta para ativar ${intentModule.name}.`
+                : "Acesse o Hub e centralize sua operação."}
             </p>
           </div>
 
           <form onSubmit={onSubmit} className="space-y-4">
-            {error && (
-              <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-                <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                <span>{error}</span>
-              </div>
-            )}
             <div className="space-y-1.5">
               <Label htmlFor="email">E-mail corporativo</Label>
               <Input
                 id="email"
                 type="email"
                 placeholder="voce@empresa.com"
-                required
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -161,7 +111,6 @@ function LoginPage() {
                   id="password"
                   type={showPwd ? "text" : "password"}
                   placeholder="••••••••"
-                  required
                   autoComplete="current-password"
                   className="pr-10"
                   value={password}
@@ -180,12 +129,11 @@ function LoginPage() {
 
             <Button
               type="submit"
-              disabled={loading}
               className="w-full bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
               size="lg"
             >
-              {loading ? "Entrando..." : "Entrar"}
-              {!loading && <ArrowRight className="ml-1 h-4 w-4" />}
+              Entrar
+              <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
 
             <div className="relative py-1">
@@ -213,7 +161,7 @@ function LoginPage() {
           Ainda não tem conta?{" "}
           <Link
             to="/signup"
-            search={intentModule ? { intent: intentModule.id, redirect: rawRedirect ?? internalRedirect } : undefined}
+            search={intentModule ? { intent: intentModule.id } : undefined}
             className="text-primary font-medium hover:underline"
           >
             Criar conta gratuita
@@ -222,7 +170,7 @@ function LoginPage() {
       </div>
 
       <p className="absolute bottom-5 inset-x-0 text-[11px] text-muted-foreground text-center font-mono z-10">
-        Protegido por criptografia ponta-a-ponta · Multi-tenant
+        Template UI · Backend desacoplado
       </p>
     </div>
   );

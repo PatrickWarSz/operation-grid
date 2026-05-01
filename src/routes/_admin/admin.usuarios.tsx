@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
 import { Shield, ShieldOff } from "lucide-react";
 
 export const Route = createFileRoute("/_admin/admin/usuarios")({
@@ -12,37 +11,24 @@ interface ProfileRow {
   id: string;
   full_name: string | null;
   tenant_id: string | null;
-  is_admin?: boolean;
+  is_admin: boolean;
 }
 
+const MOCK_USERS: ProfileRow[] = [
+  { id: "user-1", full_name: "João Silva", tenant_id: "tenant-1", is_admin: true },
+  { id: "user-2", full_name: "Maria Souza", tenant_id: "tenant-1", is_admin: false },
+  { id: "user-3", full_name: "Carlos Lima", tenant_id: "tenant-2", is_admin: false },
+  { id: "user-4", full_name: "Ana Pereira", tenant_id: "tenant-3", is_admin: true },
+  { id: "user-5", full_name: "Pedro Almeida", tenant_id: "tenant-3", is_admin: false },
+];
+
 function UsuariosPage() {
-  const [rows, setRows] = useState<ProfileRow[]>([]);
+  const [rows, setRows] = useState<ProfileRow[]>(MOCK_USERS);
   const [search, setSearch] = useState("");
-  const [busy, setBusy] = useState<string | null>(null);
 
-  useEffect(() => { void load(); }, []);
-
-  async function load() {
-    const sb = supabase as unknown as { from: (t: string) => any };
-    const [{ data: profs }, { data: roles }] = await Promise.all([
-      sb.from("profiles").select("id, full_name, tenant_id").order("full_name"),
-      sb.from("user_roles").select("user_id").eq("role", "admin"),
-    ]);
-    const adminIds = new Set((roles as { user_id: string }[] | null)?.map((r) => r.user_id) ?? []);
-    setRows(((profs as ProfileRow[]) ?? []).map((p) => ({ ...p, is_admin: adminIds.has(p.id) })));
-  }
-
-  async function toggleAdmin(userId: string, makeAdmin: boolean) {
-    setBusy(userId);
-    const sb = supabase as unknown as { from: (t: string) => any };
-    if (makeAdmin) {
-      await sb.from("user_roles").insert({ user_id: userId, role: "admin" });
-    } else {
-      await sb.from("user_roles").delete().eq("user_id", userId).eq("role", "admin");
-    }
-    setBusy(null);
-    await load();
-  }
+  const toggleAdmin = (userId: string, makeAdmin: boolean) => {
+    setRows((r) => r.map((u) => (u.id === userId ? { ...u, is_admin: makeAdmin } : u)));
+  };
 
   const filtered = rows.filter(
     (r) => !search || (r.full_name ?? "").toLowerCase().includes(search.toLowerCase())
@@ -74,9 +60,8 @@ function UsuariosPage() {
               </div>
               <button
                 onClick={() => toggleAdmin(u.id, !u.is_admin)}
-                disabled={busy === u.id}
                 className={
-                  "ml-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition disabled:opacity-50 " +
+                  "ml-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition " +
                   (u.is_admin
                     ? "bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25"
                     : "bg-zinc-800 text-zinc-300 border border-zinc-700 hover:bg-zinc-700")

@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useRef, useEffect } from "react";
 import { useWorkspace } from "@/hooks/useWorkspace";
-import { supabase } from "@/integrations/supabase/client";
 import { Check, Upload, Loader2, Accessibility } from "lucide-react";
 import { setReduceMotionOverride } from "@/hooks/useReducedMotion";
 
@@ -20,7 +19,7 @@ const PRESETS = [
 ];
 
 function Configuracoes() {
-  const { branding, saveBranding, tenantId, tenantName } = useWorkspace();
+  const { branding, saveBranding, tenantName } = useWorkspace();
   const [primary, setPrimary] = useState(branding.primary_color);
   const [accent, setAccent] = useState(branding.accent_color);
   const [name, setName] = useState(branding.workspace_name ?? "");
@@ -54,21 +53,19 @@ function Configuracoes() {
   };
 
   const handleLogoUpload = async (file: File) => {
-    if (!tenantId) return;
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop() || "png";
-      const path = `${tenantId}/logo-${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from("tenant-logos").upload(path, file, {
-        upsert: true,
-        cacheControl: "3600",
+      // MOCK: lê o arquivo como data URL e salva no branding local.
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
       });
-      if (error) throw error;
-      const { data: pub } = supabase.storage.from("tenant-logos").getPublicUrl(path);
-      await saveBranding({ logo_url: pub.publicUrl });
+      await saveBranding({ logo_url: dataUrl });
     } catch (e) {
       console.error("Upload error:", e);
-      alert("Erro ao enviar a logo. Verifique se o bucket 'tenant-logos' existe.");
+      alert("Erro ao processar a logo.");
     } finally {
       setUploading(false);
     }
