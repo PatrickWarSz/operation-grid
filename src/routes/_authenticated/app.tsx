@@ -22,7 +22,6 @@ export const Route = createFileRoute("/_authenticated/app")({
 function HomePortal() {
   const { user } = useAuth();
   const { loading, tenantName, fullName, branding, access, announcements, unreadIds, startTrial } = useWorkspace();
-  const { activeUnitId } = useUnits();
   const search = Route.useSearch();
   const navigate = useNavigate();
   const handledIntent = useRef<string | null>(null);
@@ -38,23 +37,16 @@ function HomePortal() {
 
     const current = access.get(intent);
 
-    const goToProgram = async () => {
-      // Se o módulo é satélite externo whitelisted, faz handoff de sessão.
-      if (mod.externalUrl && isAllowedSatelliteUrl(mod.externalUrl)) {
-        const { data } = await supabase.auth.getSession();
-        window.location.href = buildSatelliteUrl(mod.externalUrl, data.session, { unitId: activeUnitId });
-        return;
-      }
+    const goToProgram = () => {
       navigate({ to: "/app/programas/$slug", params: { slug: intent }, replace: true });
     };
 
     if (current === "active" || current === "trial") {
-      void goToProgram();
+      goToProgram();
       return;
     }
-    // inicia trial silenciosamente; ignora erro (ex: já iniciado antes)
-    startTrial(intent).catch(() => {}).finally(() => { void goToProgram(); });
-  }, [loading, search.intent, access, startTrial, navigate, activeUnitId]);
+    startTrial(intent).catch(() => {}).finally(() => { goToProgram(); });
+  }, [loading, search.intent, access, startTrial, navigate]);
 
   const display = firstName(fullName ?? user?.email ?? "");
   const greeting = greetingFor();
@@ -159,18 +151,13 @@ type ModuleType = (typeof MODULES)[number];
 
 function ActiveProgramCard({ module: m, hasUpdate }: { module: ModuleType; hasUpdate: boolean }) {
   const Icon = m.icon;
-  const { activeUnitId } = useUnits();
-  const isExternal = !!m.externalUrl && isAllowedSatelliteUrl(m.externalUrl);
 
-  const handleExternalOpen = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    const { data } = await supabase.auth.getSession();
-    const url = buildSatelliteUrl(m.externalUrl!, data.session, { unitId: activeUnitId });
-    window.open(url, "_blank", "noopener,noreferrer");
-  };
-
-  const cardInner = (
-    <>
+  return (
+    <Link
+      to="/app/programas/$slug"
+      params={{ slug: m.id }}
+      className="ws-card group overflow-hidden hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 flex flex-col relative"
+    >
       <div className="aspect-[16/10] ws-surface-2 relative overflow-hidden border-b ws-border" style={{ borderBottomWidth: 1 }}>
         <ProgramLivePreview slug={m.id} />
         <TrialBadge moduleId={m.id} />
@@ -197,35 +184,11 @@ function ActiveProgramCard({ module: m, hasUpdate }: { module: ModuleType; hasUp
         </div>
         <div className="mt-4 flex items-center justify-between">
           <span className="text-xs font-medium ws-primary-text inline-flex items-center gap-1.5 group-hover:gap-2 transition-all">
-            {isExternal ? "Abrir em nova guia" : "Abrir programa"}
-            {isExternal ? <ExternalLink className="h-3.5 w-3.5" /> : <ArrowRight className="h-3.5 w-3.5" />}
+            Abrir programa
+            <ArrowRight className="h-3.5 w-3.5" />
           </span>
         </div>
       </div>
-    </>
-  );
-
-  if (isExternal) {
-    return (
-      <a
-        href={m.externalUrl}
-        onClick={handleExternalOpen}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="ws-card group overflow-hidden hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 flex flex-col relative"
-      >
-        {cardInner}
-      </a>
-    );
-  }
-
-  return (
-    <Link
-      to="/app/programas/$slug"
-      params={{ slug: m.id }}
-      className="ws-card group overflow-hidden hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 flex flex-col relative"
-    >
-      {cardInner}
     </Link>
   );
 }
