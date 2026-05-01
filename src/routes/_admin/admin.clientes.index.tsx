@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
 import { Search, ChevronRight } from "lucide-react";
 
 export const Route = createFileRoute("/_admin/admin/clientes/")({
@@ -24,26 +23,20 @@ const STATUS_BADGE: Record<string, string> = {
   cancelled: "bg-zinc-700/40 text-zinc-400 border-zinc-700",
 };
 
+// MOCK: lista fictícia de clientes/tenants.
+const MOCK_TENANTS: TenantRow[] = [
+  { id: "tenant-1", name: "Acme Ltda", subscription_status: "active", created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 120).toISOString(), trial_ends_at: null, plan_id: "plan-pro" },
+  { id: "tenant-2", name: "Mercearia do Bairro", subscription_status: "trial", created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(), trial_ends_at: new Date(Date.now() + 1000 * 60 * 60 * 24 * 2).toISOString(), plan_id: null },
+  { id: "tenant-3", name: "Distribuidora Sol", subscription_status: "active", created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 240).toISOString(), trial_ends_at: null, plan_id: "plan-enterprise" },
+  { id: "tenant-4", name: "Padaria Cantinho", subscription_status: "overdue", created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 80).toISOString(), trial_ends_at: null, plan_id: "plan-basic" },
+  { id: "tenant-5", name: "Loja Velha", subscription_status: "cancelled", created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 400).toISOString(), trial_ends_at: null, plan_id: null },
+  { id: "tenant-6", name: "Auto Peças Silva", subscription_status: "active", created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 60).toISOString(), trial_ends_at: null, plan_id: "plan-pro" },
+];
+
 function ClientesList() {
-  const [rows, setRows] = useState<TenantRow[]>([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<string>("all");
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    void load();
-  }, []);
-
-  async function load() {
-    setLoading(true);
-    const sb = supabase as unknown as { from: (t: string) => any };
-    const { data } = await sb
-      .from("tenants")
-      .select("id, name, subscription_status, created_at, trial_ends_at, plan_id")
-      .order("created_at", { ascending: false });
-    setRows((data as TenantRow[]) ?? []);
-    setLoading(false);
-  }
+  const rows = MOCK_TENANTS;
 
   const filtered = rows
     .filter((r) => filter === "all" || r.subscription_status === filter)
@@ -89,9 +82,7 @@ function ClientesList() {
       </div>
 
       <div className="rounded-xl border border-zinc-800 bg-zinc-900 divide-y divide-zinc-800">
-        {loading ? (
-          <p className="p-5 text-sm text-zinc-500">carregando...</p>
-        ) : filtered.length === 0 ? (
+        {filtered.length === 0 ? (
           <p className="p-5 text-sm text-zinc-500">Nenhum cliente encontrado.</p>
         ) : (
           filtered.map((t) => (

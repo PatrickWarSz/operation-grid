@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
 import { MODULES } from "@/lib/modules";
 import { Plus, Trash2, Image as ImageIcon, Save } from "lucide-react";
 
@@ -25,61 +24,53 @@ const EMPTY: Form = {
   module_id: "", media_url: "", media_type: "", target_tenant_id: "",
 };
 
+const MOCK_TENANTS = [
+  { id: "tenant-1", name: "Acme Ltda" },
+  { id: "tenant-2", name: "Mercearia do Bairro" },
+  { id: "tenant-3", name: "Distribuidora Sol" },
+];
+
+const INITIAL_ITEMS: Form[] = [
+  {
+    id: "ann-1",
+    title: "Novo: Módulo de Devoluções em beta",
+    body_md: "Já está disponível para todos os clientes a primeira versão do programa Devoluções Pro. Teste por 7 dias.",
+    category: "beta",
+    module_id: "",
+    media_url: "",
+    media_type: "",
+    target_tenant_id: "",
+  },
+  {
+    id: "ann-2",
+    title: "Atualização do Estoque Pro",
+    body_md: "Agora com suporte a múltiplas filiais e relatórios consolidados.",
+    category: "feature",
+    module_id: "estoque",
+    media_url: "",
+    media_type: "",
+    target_tenant_id: "",
+  },
+];
+
 function AdminNovidadesPage() {
-  const [items, setItems] = useState<Form[]>([]);
-  const [tenants, setTenants] = useState<{ id: string; name: string }[]>([]);
+  const [items, setItems] = useState<Form[]>(INITIAL_ITEMS);
   const [form, setForm] = useState<Form>(EMPTY);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error] = useState<string | null>(null);
 
-  useEffect(() => {
-    void load();
-    void loadTenants();
-  }, []);
-
-  async function load() {
-    const sb = supabase as unknown as { from: (t: string) => any };
-    const { data } = await sb.from("announcements").select("*").order("published_at", { ascending: false });
-    setItems((data as Form[]) ?? []);
-  }
-  async function loadTenants() {
-    const sb = supabase as unknown as { from: (t: string) => any };
-    const { data } = await sb.from("tenants").select("id, name").order("name");
-    setTenants((data as { id: string; name: string }[]) ?? []);
-  }
-
-  const submit = async () => {
-    setSaving(true);
-    setError(null);
-    try {
-      const sb = supabase as unknown as { from: (t: string) => any };
-      const payload = {
-        title: form.title,
-        body_md: form.body_md,
-        category: form.category,
-        module_id: form.module_id || null,
-        media_url: form.media_url || null,
-        media_type: form.media_url ? (form.media_type || "image") : null,
-        target_tenant_id: form.target_tenant_id || null,
-      };
-      const { error } = form.id
-        ? await sb.from("announcements").update(payload).eq("id", form.id)
-        : await sb.from("announcements").insert(payload);
-      if (error) throw error;
-      setForm(EMPTY);
-      await load();
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Erro ao salvar");
-    } finally {
-      setSaving(false);
+  const submit = () => {
+    if (!form.title) return;
+    if (form.id) {
+      setItems((arr) => arr.map((it) => (it.id === form.id ? { ...form } : it)));
+    } else {
+      setItems((arr) => [{ ...form, id: `ann-${Date.now()}` }, ...arr]);
     }
+    setForm(EMPTY);
   };
 
-  const remove = async (id: string) => {
+  const remove = (id: string) => {
     if (!confirm("Excluir esta novidade?")) return;
-    const sb = supabase as unknown as { from: (t: string) => any };
-    await sb.from("announcements").delete().eq("id", id);
-    await load();
+    setItems((arr) => arr.filter((it) => it.id !== id));
   };
 
   return (
@@ -118,7 +109,7 @@ function AdminNovidadesPage() {
           <Field label="Tenant alvo (vazio = todos)">
             <select className={INPUT} value={form.target_tenant_id} onChange={(e) => setForm({ ...form, target_tenant_id: e.target.value })}>
               <option value="">— todos os clientes —</option>
-              {tenants.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+              {MOCK_TENANTS.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
           </Field>
           <Field label="URL de mídia (opcional)">
@@ -152,11 +143,11 @@ function AdminNovidadesPage() {
           )}
           <button
             onClick={submit}
-            disabled={saving || !form.title}
+            disabled={!form.title}
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-amber-500 text-zinc-950 font-semibold text-sm hover:bg-amber-400 disabled:opacity-40"
           >
             <Save className="h-4 w-4" />
-            {saving ? "Salvando..." : form.id ? "Atualizar" : "Publicar"}
+            {form.id ? "Atualizar" : "Publicar"}
           </button>
         </div>
       </section>
