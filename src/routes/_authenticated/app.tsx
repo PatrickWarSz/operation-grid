@@ -8,9 +8,6 @@ import { ArrowRight, Lock, Sparkles, ExternalLink } from "lucide-react";
 import { RevealStagger, RevealItem } from "@/components/Reveal";
 import { StartTrialButton, TrialBadge } from "@/components/workspace/TrialControls";
 import { EmptyStateRecommendations } from "@/components/workspace/EmptyStateRecommendations";
-import { supabase } from "@/integrations/supabase/client";
-import { buildSatelliteUrl, isAllowedSatelliteUrl } from "@/lib/satellite-handoff";
-import { useUnits } from "@/hooks/useUnits";
 
 type AppSearch = { intent?: string };
 
