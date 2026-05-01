@@ -1,9 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Building2, Plus, Star, Trash2, Loader2, Lock, Users } from "lucide-react";
+import { Building2, Plus, Star, Trash2, Loader2, Users } from "lucide-react";
 import { useUnits, type UnitRow } from "@/hooks/useUnits";
-import { useWorkspace } from "@/hooks/useWorkspace";
-import { supabase } from "@/integrations/supabase/client";
 
 type FiliaisSearch = { novo?: number };
 
@@ -16,22 +14,22 @@ export const Route = createFileRoute("/_authenticated/app/configuracoes/filiais"
 });
 
 function slugify(s: string) {
-  return s
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "")
-    .slice(0, 40) || "filial";
+  return (
+    s
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "")
+      .slice(0, 40) || "filial"
+  );
 }
 
 function FiliaisPage() {
-  const { units, maxUnits, canCreateUnit, refresh, loading } = useUnits();
-  const { isAdmin, tenantId } = useWorkspace();
+  const { units, maxUnits, canCreateUnit, refresh, loading, createUnit, deleteUnit } = useUnits();
   const search = Route.useSearch();
   const [showCreate, setShowCreate] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState("");
 
   useEffect(() => {
@@ -43,20 +41,10 @@ function FiliaisPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!tenantId || !name.trim()) return;
+    if (!name.trim()) return;
     setSubmitting(true);
-    setError(null);
-    const { error: err } = await (supabase as any).from("units").insert({
-      tenant_id: tenantId,
-      name: name.trim(),
-      slug: slugify(name),
-      is_primary: false,
-    });
+    await createUnit(name);
     setSubmitting(false);
-    if (err) {
-      setError(err.message ?? "Erro ao criar filial");
-      return;
-    }
     setName("");
     setShowCreate(false);
     await refresh();
@@ -65,11 +53,7 @@ function FiliaisPage() {
   const handleDelete = async (u: UnitRow) => {
     if (u.is_primary) return;
     if (!confirm(`Excluir filial "${u.name}"? Esta ação não pode ser desfeita.`)) return;
-    const { error: err } = await (supabase as any).from("units").delete().eq("id", u.id);
-    if (err) {
-      alert(err.message ?? "Erro ao excluir filial");
-      return;
-    }
+    await deleteUnit(u.id);
     await refresh();
   };
 
@@ -85,7 +69,6 @@ function FiliaisPage() {
         </p>
       </header>
 
-      {/* Contador / limite */}
       <div className="ws-card p-4 mb-6 flex items-center justify-between">
         <div>
           <p className="text-sm font-medium ws-text">
@@ -104,7 +87,6 @@ function FiliaisPage() {
         )}
       </div>
 
-      {/* Lista */}
       <div className="ws-card overflow-hidden mb-6">
         {loading ? (
           <div className="p-8 text-center text-xs ws-text-muted">
@@ -131,7 +113,7 @@ function FiliaisPage() {
                   </div>
                   <p className="text-[11px] ws-text-muted mt-0.5 font-mono">{u.slug}</p>
                 </div>
-                {isAdmin && !u.is_primary && (
+                {!u.is_primary && (
                   <button
                     onClick={() => handleDelete(u)}
                     className="ws-btn-ghost p-2"
@@ -147,15 +129,7 @@ function FiliaisPage() {
         )}
       </div>
 
-      {/* Criar */}
-      {!isAdmin ? (
-        <div className="ws-card p-4 flex items-start gap-3">
-          <Lock className="h-4 w-4 ws-text-muted mt-0.5" />
-          <p className="text-xs ws-text-muted">
-            Apenas administradores podem criar ou excluir filiais.
-          </p>
-        </div>
-      ) : !showCreate ? (
+      {!showCreate ? (
         <button
           onClick={() => setShowCreate(true)}
           disabled={!canCreateUnit}
@@ -182,11 +156,6 @@ function FiliaisPage() {
               <p className="text-[11px] ws-text-muted mt-1 font-mono">slug: {slugify(name)}</p>
             )}
           </div>
-          {error && (
-            <p className="text-xs" style={{ color: "#ef4444" }}>
-              {error}
-            </p>
-          )}
           <div className="flex items-center gap-2">
             <button
               type="submit"
@@ -200,7 +169,6 @@ function FiliaisPage() {
               onClick={() => {
                 setShowCreate(false);
                 setName("");
-                setError(null);
               }}
               className="ws-btn-ghost text-sm"
             >
@@ -210,7 +178,6 @@ function FiliaisPage() {
         </form>
       )}
 
-      {/* Nota sobre membros (fase 2) */}
       <div className="mt-8 ws-card p-4 flex items-start gap-3">
         <Users className="h-4 w-4 ws-text-muted mt-0.5" />
         <div>
