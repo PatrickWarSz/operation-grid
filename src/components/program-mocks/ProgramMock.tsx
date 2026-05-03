@@ -53,6 +53,8 @@ export function ProgramMock({ slug, variant }: Props) {
             <Row cols={["PA-1102 Camisa M", "47 un", "mín 30", "ok"]} tone="emerald" />
           </Panel>
         </Frame>
+      );
+
     default:
       return (
         <Frame padding={padding} title={slug} titleSize={titleSize}>
