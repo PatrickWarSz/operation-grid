@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, ArrowRight, ArrowLeft, Hexagon, Check, Sparkles } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, Hexagon, Check, Sparkles } from "lucide-react";
 import { AuthBackdrop } from "@/components/auth/AuthBackdrop";
 import { MODULES } from "@/lib/modules";
 import { useAuth } from "@/hooks/useAuth";
