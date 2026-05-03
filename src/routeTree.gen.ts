@@ -14,7 +14,6 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AdminRouteImport } from './routes/_admin'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ProgramasSlugRouteImport } from './routes/programas.$slug'
 import { Route as AppsSlugRouteImport } from './routes/apps.$slug'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as AdminAdminIndexRouteImport } from './routes/_admin/admin.index'
@@ -54,11 +53,6 @@ const AdminRoute = AdminRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProgramasSlugRoute = ProgramasSlugRouteImport.update({
-  id: '/programas/$slug',
-  path: '/programas/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppsSlugRoute = AppsSlugRouteImport.update({
@@ -159,7 +153,6 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/app': typeof AuthenticatedAppRouteWithChildren
   '/apps/$slug': typeof AppsSlugRouteWithChildren
-  '/programas/$slug': typeof ProgramasSlugRoute
   '/admin/financeiro': typeof AdminAdminFinanceiroRoute
   '/admin/modulos': typeof AdminAdminModulosRoute
   '/admin/novidades': typeof AdminAdminNovidadesRoute
@@ -182,7 +175,6 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/app': typeof AuthenticatedAppRouteWithChildren
   '/apps/$slug': typeof AppsSlugRouteWithChildren
-  '/programas/$slug': typeof ProgramasSlugRoute
   '/admin/financeiro': typeof AdminAdminFinanceiroRoute
   '/admin/modulos': typeof AdminAdminModulosRoute
   '/admin/novidades': typeof AdminAdminNovidadesRoute
@@ -208,7 +200,6 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/_authenticated/app': typeof AuthenticatedAppRouteWithChildren
   '/apps/$slug': typeof AppsSlugRouteWithChildren
-  '/programas/$slug': typeof ProgramasSlugRoute
   '/_admin/admin/financeiro': typeof AdminAdminFinanceiroRoute
   '/_admin/admin/modulos': typeof AdminAdminModulosRoute
   '/_admin/admin/novidades': typeof AdminAdminNovidadesRoute
@@ -233,7 +224,6 @@ export interface FileRouteTypes {
     | '/signup'
     | '/app'
     | '/apps/$slug'
-    | '/programas/$slug'
     | '/admin/financeiro'
     | '/admin/modulos'
     | '/admin/novidades'
@@ -256,7 +246,6 @@ export interface FileRouteTypes {
     | '/signup'
     | '/app'
     | '/apps/$slug'
-    | '/programas/$slug'
     | '/admin/financeiro'
     | '/admin/modulos'
     | '/admin/novidades'
@@ -281,7 +270,6 @@ export interface FileRouteTypes {
     | '/signup'
     | '/_authenticated/app'
     | '/apps/$slug'
-    | '/programas/$slug'
     | '/_admin/admin/financeiro'
     | '/_admin/admin/modulos'
     | '/_admin/admin/novidades'
@@ -306,7 +294,6 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   SignupRoute: typeof SignupRoute
   AppsSlugRoute: typeof AppsSlugRouteWithChildren
-  ProgramasSlugRoute: typeof ProgramasSlugRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -344,13 +331,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/programas/$slug': {
-      id: '/programas/$slug'
-      path: '/programas/$slug'
-      fullPath: '/programas/$slug'
-      preLoaderRoute: typeof ProgramasSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/apps/$slug': {
@@ -577,7 +557,6 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   SignupRoute: SignupRoute,
   AppsSlugRoute: AppsSlugRouteWithChildren,
-  ProgramasSlugRoute: ProgramasSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
