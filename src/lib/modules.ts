@@ -77,7 +77,7 @@ export const PLANS = [
     tagline: "Para quem está escalando.",
     price: 549,
     badge: "Mais popular",
-    includes: ["devolucoes", "estoque", "financeiro-empresa"],
+    includes: ["devolucoes", "estoque"],
     maxUnits: 3,
     features: [
       "3 programas inclusos",
