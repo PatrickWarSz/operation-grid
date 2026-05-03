@@ -4,7 +4,7 @@ import { useWorkspace } from "@/hooks/useWorkspace";
 import { useAuth } from "@/hooks/useAuth";
 import { MODULES } from "@/lib/modules";
 import { firstName, greetingFor } from "@/lib/workspace-theme";
-import { ArrowRight, Lock, Sparkles } from "lucide-react";
+import { ArrowRight, Lock, Sparkles, Activity, Layers, Zap } from "lucide-react";
 import { RevealStagger, RevealItem } from "@/components/Reveal";
 import { StartTrialButton, TrialBadge } from "@/components/workspace/TrialControls";
 import { EmptyStateRecommendations } from "@/components/workspace/EmptyStateRecommendations";
@@ -68,19 +68,46 @@ function HomePortal() {
       .map((a) => a.module_id as string)
   );
 
+  const totalActive = activeModules.length;
+  const totalAvailable = MODULES.length;
+
   return (
     <div className="max-w-7xl mx-auto">
-      {/* Saudação */}
-      <section className="mb-10">
-        <p className="text-sm ws-text-muted">
-          {greeting}{display ? `, ${display}` : ""} 👋
-        </p>
-        <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight ws-text mt-1">
-          Bem-vindo ao {workspaceLabel}
-        </h1>
-        <p className="text-sm ws-text-muted mt-2 max-w-2xl">
-          Acesse seus programas ativos abaixo. Tudo o que sua equipe precisa em um só lugar.
-        </p>
+      {/* HERO editorial */}
+      <section className="relative mb-12 overflow-hidden rounded-3xl ws-card p-8 sm:p-12">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-24 -right-24 h-72 w-72 rounded-full opacity-30 blur-3xl"
+          style={{ background: "radial-gradient(circle, rgb(var(--ws-primary)) 0%, transparent 70%)" }}
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -bottom-24 -left-24 h-72 w-72 rounded-full opacity-20 blur-3xl"
+          style={{ background: "radial-gradient(circle, rgb(var(--ws-accent)) 0%, transparent 70%)" }}
+        />
+
+        <div className="relative">
+          <div className="flex items-center gap-2 ws-primary-text mb-4">
+            <span className="inline-flex h-1.5 w-1.5 rounded-full ws-primary-bg animate-pulse" />
+            <span className="text-[11px] font-semibold uppercase tracking-[0.18em]">
+              {greeting}{display ? `, ${display}` : ""}
+            </span>
+          </div>
+
+          <h1 className="text-3xl sm:text-5xl font-semibold tracking-tight ws-text leading-[1.05]">
+            {workspaceLabel}
+            <span className="block text-base sm:text-lg font-normal ws-text-muted mt-3 max-w-2xl">
+              Sua operação inteira em um só lugar. Acesse os programas ativos abaixo
+              e ative novos quando fizer sentido para o seu negócio.
+            </span>
+          </h1>
+
+          <div className="mt-8 grid grid-cols-3 gap-3 max-w-xl">
+            <HeroStat icon={Activity} label="Programas ativos" value={`${totalActive}`} />
+            <HeroStat icon={Layers} label="Disponíveis" value={`${totalAvailable}`} />
+            <HeroStat icon={Zap} label="Status" value="Operacional" valueClass="text-emerald-600 dark:text-emerald-400" />
+          </div>
+        </div>
       </section>
 
       {/* Estado vazio inteligente */}
@@ -125,6 +152,28 @@ function HomePortal() {
           </RevealStagger>
         </section>
       )}
+    </div>
+  );
+}
+
+function HeroStat({
+  icon: Icon,
+  label,
+  value,
+  valueClass,
+}: {
+  icon: typeof Activity;
+  label: string;
+  value: string;
+  valueClass?: string;
+}) {
+  return (
+    <div className="rounded-xl ws-surface-2 px-3 py-3 sm:px-4 sm:py-3.5 border ws-border" style={{ borderWidth: 1 }}>
+      <div className="flex items-center gap-1.5 ws-text-muted">
+        <Icon className="h-3.5 w-3.5" />
+        <span className="text-[10px] uppercase tracking-wider font-medium">{label}</span>
+      </div>
+      <p className={"text-lg sm:text-xl font-semibold ws-text mt-1 " + (valueClass ?? "")}>{value}</p>
     </div>
   );
 }

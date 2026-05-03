@@ -60,7 +60,7 @@ interface WorkspaceContextValue {
   fullName: string | null;
   profileMeta: ProfileMeta;
   branding: TenantBranding;
-  isAdmin: boolean;
+  // isAdmin removed — workspace é só visão de cliente
   access: Map<string, ModuleStatus>;
   accessRows: ModuleAccessRow[];
   announcements: AnnouncementRow[];
@@ -282,7 +282,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         fullName,
         profileMeta,
         branding,
-        isAdmin: true, // Mock: usuário sempre é admin para ver o painel.
+        // isAdmin removed
         access: accessMap,
         accessRows,
         announcements,

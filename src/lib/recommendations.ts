@@ -3,10 +3,8 @@ import type { AppModule } from "@/lib/modules";
 
 export const SEGMENTS = [
   { id: "varejo", label: "Varejo / E-commerce" },
-  { id: "servicos", label: "Serviços" },
   { id: "industria", label: "Indústria / Produção" },
-  { id: "alimentacao", label: "Alimentação / Food" },
-  { id: "saude", label: "Saúde / Estética" },
+  { id: "servicos", label: "Serviços" },
   { id: "outro", label: "Outro" },
 ] as const;
 
@@ -20,28 +18,20 @@ export const COMPANY_SIZES = [
 export const PAINS = [
   { id: "devolucoes", label: "Devoluções e disputas atrapalhando margem" },
   { id: "estoque", label: "Estoque desorganizado / falta de matéria-prima" },
-  { id: "financeiro", label: "Não sei se a empresa está dando lucro" },
-  { id: "vendas", label: "Vendas espalhadas em vários canais" },
   { id: "tudo", label: "Quero organizar tudo de uma vez" },
 ] as const;
 
-// Recomendação por segmento
 const BY_SEGMENT: Record<string, string[]> = {
-  varejo: ["estoque", "devolucoes", "financeiro-empresa"],
-  servicos: ["financeiro-empresa", "financeiro-pessoal"],
-  industria: ["estoque", "financeiro-empresa"],
-  alimentacao: ["estoque", "financeiro-empresa"],
-  saude: ["financeiro-empresa", "financeiro-pessoal"],
+  varejo: ["estoque", "devolucoes"],
+  industria: ["estoque"],
+  servicos: ["devolucoes"],
   outro: ["devolucoes", "estoque"],
 };
 
-// Recomendação por dor (mais específica)
 const BY_PAIN: Record<string, string[]> = {
   devolucoes: ["devolucoes"],
   estoque: ["estoque"],
-  financeiro: ["financeiro-empresa"],
-  vendas: ["estoque", "devolucoes"],
-  tudo: ["devolucoes", "estoque", "financeiro-empresa"],
+  tudo: ["devolucoes", "estoque"],
 };
 
 export function recommendedModuleIds(opts: { segment?: string | null; pain?: string | null }): string[] {

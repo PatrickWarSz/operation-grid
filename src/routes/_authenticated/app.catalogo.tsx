@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { MODULES } from "@/lib/modules";
 import { useWorkspace } from "@/hooks/useWorkspace";
-import { Check, Lock, Sparkles, ExternalLink } from "lucide-react";
+import { Check, Lock, Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/app/catalogo")({
   head: () => ({ meta: [{ title: "Catálogo — Workspace" }] }),

@@ -12,25 +12,16 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
-import { Route as AdminRouteImport } from './routes/_admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppsSlugRouteImport } from './routes/apps.$slug'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
-import { Route as AdminAdminIndexRouteImport } from './routes/_admin/admin.index'
 import { Route as AppsSlugPreviewRouteImport } from './routes/apps.$slug.preview'
 import { Route as AuthenticatedAppProgramasRouteImport } from './routes/_authenticated/app.programas'
 import { Route as AuthenticatedAppNovidadesRouteImport } from './routes/_authenticated/app.novidades'
 import { Route as AuthenticatedAppConfiguracoesRouteImport } from './routes/_authenticated/app.configuracoes'
 import { Route as AuthenticatedAppCatalogoRouteImport } from './routes/_authenticated/app.catalogo'
-import { Route as AdminAdminUsuariosRouteImport } from './routes/_admin/admin.usuarios'
-import { Route as AdminAdminPlanosRouteImport } from './routes/_admin/admin.planos'
-import { Route as AdminAdminNovidadesRouteImport } from './routes/_admin/admin.novidades'
-import { Route as AdminAdminModulosRouteImport } from './routes/_admin/admin.modulos'
-import { Route as AdminAdminFinanceiroRouteImport } from './routes/_admin/admin.financeiro'
-import { Route as AdminAdminClientesIndexRouteImport } from './routes/_admin/admin.clientes.index'
 import { Route as AuthenticatedAppProgramasSlugRouteImport } from './routes/_authenticated/app.programas.$slug'
 import { Route as AuthenticatedAppConfiguracoesFiliaisRouteImport } from './routes/_authenticated/app.configuracoes.filiais'
-import { Route as AdminAdminClientesIdRouteImport } from './routes/_admin/admin.clientes.$id'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -44,10 +35,6 @@ const LoginRoute = LoginRouteImport.update({
 } as any)
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminRoute = AdminRouteImport.update({
-  id: '/_admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -64,11 +51,6 @@ const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
   id: '/app',
   path: '/app',
   getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AdminAdminIndexRoute = AdminAdminIndexRouteImport.update({
-  id: '/admin/',
-  path: '/admin/',
-  getParentRoute: () => AdminRoute,
 } as any)
 const AppsSlugPreviewRoute = AppsSlugPreviewRouteImport.update({
   id: '/preview',
@@ -99,36 +81,6 @@ const AuthenticatedAppCatalogoRoute =
     path: '/catalogo',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
-const AdminAdminUsuariosRoute = AdminAdminUsuariosRouteImport.update({
-  id: '/admin/usuarios',
-  path: '/admin/usuarios',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAdminPlanosRoute = AdminAdminPlanosRouteImport.update({
-  id: '/admin/planos',
-  path: '/admin/planos',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAdminNovidadesRoute = AdminAdminNovidadesRouteImport.update({
-  id: '/admin/novidades',
-  path: '/admin/novidades',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAdminModulosRoute = AdminAdminModulosRouteImport.update({
-  id: '/admin/modulos',
-  path: '/admin/modulos',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAdminFinanceiroRoute = AdminAdminFinanceiroRouteImport.update({
-  id: '/admin/financeiro',
-  path: '/admin/financeiro',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAdminClientesIndexRoute = AdminAdminClientesIndexRouteImport.update({
-  id: '/admin/clientes/',
-  path: '/admin/clientes/',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AuthenticatedAppProgramasSlugRoute =
   AuthenticatedAppProgramasSlugRouteImport.update({
     id: '/$slug',
@@ -141,11 +93,6 @@ const AuthenticatedAppConfiguracoesFiliaisRoute =
     path: '/filiais',
     getParentRoute: () => AuthenticatedAppConfiguracoesRoute,
   } as any)
-const AdminAdminClientesIdRoute = AdminAdminClientesIdRouteImport.update({
-  id: '/admin/clientes/$id',
-  path: '/admin/clientes/$id',
-  getParentRoute: () => AdminRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -153,21 +100,13 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/app': typeof AuthenticatedAppRouteWithChildren
   '/apps/$slug': typeof AppsSlugRouteWithChildren
-  '/admin/financeiro': typeof AdminAdminFinanceiroRoute
-  '/admin/modulos': typeof AdminAdminModulosRoute
-  '/admin/novidades': typeof AdminAdminNovidadesRoute
-  '/admin/planos': typeof AdminAdminPlanosRoute
-  '/admin/usuarios': typeof AdminAdminUsuariosRoute
   '/app/catalogo': typeof AuthenticatedAppCatalogoRoute
   '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRouteWithChildren
   '/app/novidades': typeof AuthenticatedAppNovidadesRoute
   '/app/programas': typeof AuthenticatedAppProgramasRouteWithChildren
   '/apps/$slug/preview': typeof AppsSlugPreviewRoute
-  '/admin/': typeof AdminAdminIndexRoute
-  '/admin/clientes/$id': typeof AdminAdminClientesIdRoute
   '/app/configuracoes/filiais': typeof AuthenticatedAppConfiguracoesFiliaisRoute
   '/app/programas/$slug': typeof AuthenticatedAppProgramasSlugRoute
-  '/admin/clientes/': typeof AdminAdminClientesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -175,46 +114,29 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/app': typeof AuthenticatedAppRouteWithChildren
   '/apps/$slug': typeof AppsSlugRouteWithChildren
-  '/admin/financeiro': typeof AdminAdminFinanceiroRoute
-  '/admin/modulos': typeof AdminAdminModulosRoute
-  '/admin/novidades': typeof AdminAdminNovidadesRoute
-  '/admin/planos': typeof AdminAdminPlanosRoute
-  '/admin/usuarios': typeof AdminAdminUsuariosRoute
   '/app/catalogo': typeof AuthenticatedAppCatalogoRoute
   '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRouteWithChildren
   '/app/novidades': typeof AuthenticatedAppNovidadesRoute
   '/app/programas': typeof AuthenticatedAppProgramasRouteWithChildren
   '/apps/$slug/preview': typeof AppsSlugPreviewRoute
-  '/admin': typeof AdminAdminIndexRoute
-  '/admin/clientes/$id': typeof AdminAdminClientesIdRoute
   '/app/configuracoes/filiais': typeof AuthenticatedAppConfiguracoesFiliaisRoute
   '/app/programas/$slug': typeof AuthenticatedAppProgramasSlugRoute
-  '/admin/clientes': typeof AdminAdminClientesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/_admin': typeof AdminRouteWithChildren
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/_authenticated/app': typeof AuthenticatedAppRouteWithChildren
   '/apps/$slug': typeof AppsSlugRouteWithChildren
-  '/_admin/admin/financeiro': typeof AdminAdminFinanceiroRoute
-  '/_admin/admin/modulos': typeof AdminAdminModulosRoute
-  '/_admin/admin/novidades': typeof AdminAdminNovidadesRoute
-  '/_admin/admin/planos': typeof AdminAdminPlanosRoute
-  '/_admin/admin/usuarios': typeof AdminAdminUsuariosRoute
   '/_authenticated/app/catalogo': typeof AuthenticatedAppCatalogoRoute
   '/_authenticated/app/configuracoes': typeof AuthenticatedAppConfiguracoesRouteWithChildren
   '/_authenticated/app/novidades': typeof AuthenticatedAppNovidadesRoute
   '/_authenticated/app/programas': typeof AuthenticatedAppProgramasRouteWithChildren
   '/apps/$slug/preview': typeof AppsSlugPreviewRoute
-  '/_admin/admin/': typeof AdminAdminIndexRoute
-  '/_admin/admin/clientes/$id': typeof AdminAdminClientesIdRoute
   '/_authenticated/app/configuracoes/filiais': typeof AuthenticatedAppConfiguracoesFiliaisRoute
   '/_authenticated/app/programas/$slug': typeof AuthenticatedAppProgramasSlugRoute
-  '/_admin/admin/clientes/': typeof AdminAdminClientesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -224,21 +146,13 @@ export interface FileRouteTypes {
     | '/signup'
     | '/app'
     | '/apps/$slug'
-    | '/admin/financeiro'
-    | '/admin/modulos'
-    | '/admin/novidades'
-    | '/admin/planos'
-    | '/admin/usuarios'
     | '/app/catalogo'
     | '/app/configuracoes'
     | '/app/novidades'
     | '/app/programas'
     | '/apps/$slug/preview'
-    | '/admin/'
-    | '/admin/clientes/$id'
     | '/app/configuracoes/filiais'
     | '/app/programas/$slug'
-    | '/admin/clientes/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -246,50 +160,32 @@ export interface FileRouteTypes {
     | '/signup'
     | '/app'
     | '/apps/$slug'
-    | '/admin/financeiro'
-    | '/admin/modulos'
-    | '/admin/novidades'
-    | '/admin/planos'
-    | '/admin/usuarios'
     | '/app/catalogo'
     | '/app/configuracoes'
     | '/app/novidades'
     | '/app/programas'
     | '/apps/$slug/preview'
-    | '/admin'
-    | '/admin/clientes/$id'
     | '/app/configuracoes/filiais'
     | '/app/programas/$slug'
-    | '/admin/clientes'
   id:
     | '__root__'
     | '/'
-    | '/_admin'
     | '/_authenticated'
     | '/login'
     | '/signup'
     | '/_authenticated/app'
     | '/apps/$slug'
-    | '/_admin/admin/financeiro'
-    | '/_admin/admin/modulos'
-    | '/_admin/admin/novidades'
-    | '/_admin/admin/planos'
-    | '/_admin/admin/usuarios'
     | '/_authenticated/app/catalogo'
     | '/_authenticated/app/configuracoes'
     | '/_authenticated/app/novidades'
     | '/_authenticated/app/programas'
     | '/apps/$slug/preview'
-    | '/_admin/admin/'
-    | '/_admin/admin/clientes/$id'
     | '/_authenticated/app/configuracoes/filiais'
     | '/_authenticated/app/programas/$slug'
-    | '/_admin/admin/clientes/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRoute: typeof AdminRouteWithChildren
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
   SignupRoute: typeof SignupRoute
@@ -319,13 +215,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_admin': {
-      id: '/_admin'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AdminRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -346,13 +235,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/app'
       preLoaderRoute: typeof AuthenticatedAppRouteImport
       parentRoute: typeof AuthenticatedRoute
-    }
-    '/_admin/admin/': {
-      id: '/_admin/admin/'
-      path: '/admin'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AdminAdminIndexRouteImport
-      parentRoute: typeof AdminRoute
     }
     '/apps/$slug/preview': {
       id: '/apps/$slug/preview'
@@ -389,48 +271,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppCatalogoRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
-    '/_admin/admin/usuarios': {
-      id: '/_admin/admin/usuarios'
-      path: '/admin/usuarios'
-      fullPath: '/admin/usuarios'
-      preLoaderRoute: typeof AdminAdminUsuariosRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_admin/admin/planos': {
-      id: '/_admin/admin/planos'
-      path: '/admin/planos'
-      fullPath: '/admin/planos'
-      preLoaderRoute: typeof AdminAdminPlanosRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_admin/admin/novidades': {
-      id: '/_admin/admin/novidades'
-      path: '/admin/novidades'
-      fullPath: '/admin/novidades'
-      preLoaderRoute: typeof AdminAdminNovidadesRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_admin/admin/modulos': {
-      id: '/_admin/admin/modulos'
-      path: '/admin/modulos'
-      fullPath: '/admin/modulos'
-      preLoaderRoute: typeof AdminAdminModulosRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_admin/admin/financeiro': {
-      id: '/_admin/admin/financeiro'
-      path: '/admin/financeiro'
-      fullPath: '/admin/financeiro'
-      preLoaderRoute: typeof AdminAdminFinanceiroRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_admin/admin/clientes/': {
-      id: '/_admin/admin/clientes/'
-      path: '/admin/clientes'
-      fullPath: '/admin/clientes/'
-      preLoaderRoute: typeof AdminAdminClientesIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/_authenticated/app/programas/$slug': {
       id: '/_authenticated/app/programas/$slug'
       path: '/$slug'
@@ -445,39 +285,8 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppConfiguracoesFiliaisRouteImport
       parentRoute: typeof AuthenticatedAppConfiguracoesRoute
     }
-    '/_admin/admin/clientes/$id': {
-      id: '/_admin/admin/clientes/$id'
-      path: '/admin/clientes/$id'
-      fullPath: '/admin/clientes/$id'
-      preLoaderRoute: typeof AdminAdminClientesIdRouteImport
-      parentRoute: typeof AdminRoute
-    }
   }
 }
-
-interface AdminRouteChildren {
-  AdminAdminFinanceiroRoute: typeof AdminAdminFinanceiroRoute
-  AdminAdminModulosRoute: typeof AdminAdminModulosRoute
-  AdminAdminNovidadesRoute: typeof AdminAdminNovidadesRoute
-  AdminAdminPlanosRoute: typeof AdminAdminPlanosRoute
-  AdminAdminUsuariosRoute: typeof AdminAdminUsuariosRoute
-  AdminAdminIndexRoute: typeof AdminAdminIndexRoute
-  AdminAdminClientesIdRoute: typeof AdminAdminClientesIdRoute
-  AdminAdminClientesIndexRoute: typeof AdminAdminClientesIndexRoute
-}
-
-const AdminRouteChildren: AdminRouteChildren = {
-  AdminAdminFinanceiroRoute: AdminAdminFinanceiroRoute,
-  AdminAdminModulosRoute: AdminAdminModulosRoute,
-  AdminAdminNovidadesRoute: AdminAdminNovidadesRoute,
-  AdminAdminPlanosRoute: AdminAdminPlanosRoute,
-  AdminAdminUsuariosRoute: AdminAdminUsuariosRoute,
-  AdminAdminIndexRoute: AdminAdminIndexRoute,
-  AdminAdminClientesIdRoute: AdminAdminClientesIdRoute,
-  AdminAdminClientesIndexRoute: AdminAdminClientesIndexRoute,
-}
-
-const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface AuthenticatedAppConfiguracoesRouteChildren {
   AuthenticatedAppConfiguracoesFiliaisRoute: typeof AuthenticatedAppConfiguracoesFiliaisRoute
@@ -552,7 +361,6 @@ const AppsSlugRouteWithChildren = AppsSlugRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRoute: AdminRouteWithChildren,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
   SignupRoute: SignupRoute,
