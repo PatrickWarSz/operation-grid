@@ -20,7 +20,6 @@ import {
   Menu,
   X,
   Sparkles,
-  ShieldCheck,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -63,7 +62,7 @@ const NAV = [
 
 function WorkspaceShell() {
   const { user, signOut } = useAuth();
-  const { branding, tenantName, fullName, setMode, isAdmin, unreadIds } = useWorkspace();
+  const { branding, tenantName, fullName, setMode, unreadIds } = useWorkspace();
   const navigate = useNavigate();
   const location = useLocation();
   const reducedMotion = useReducedMotion();
@@ -90,7 +89,7 @@ function WorkspaceShell() {
             logo={branding.logo_url}
             isActive={isActive}
             unreadCount={unreadIds.size}
-            isAdmin={isAdmin}
+            
             onSignOut={async () => {
               await signOut();
               navigate({ to: "/" });
@@ -117,7 +116,7 @@ function WorkspaceShell() {
                 logo={branding.logo_url}
                 isActive={isActive}
                 unreadCount={unreadIds.size}
-                isAdmin={isAdmin}
+                
                 onClick={() => setMobileOpen(false)}
                 onSignOut={async () => {
                   await signOut();
@@ -195,12 +194,11 @@ interface SidebarContentProps {
   logo: string | null;
   isActive: (to: string, exact: boolean) => boolean;
   unreadCount: number;
-  isAdmin: boolean;
   onClick?: () => void;
   onSignOut: () => Promise<void> | void;
 }
 
-function SidebarContent({ workspaceLabel, logo, isActive, unreadCount, isAdmin, onClick, onSignOut }: SidebarContentProps) {
+function SidebarContent({ workspaceLabel, logo, isActive, unreadCount, onClick, onSignOut }: SidebarContentProps) {
   return (
     <>
       <div className="flex items-center gap-3 px-2 mt-2 mb-6">
@@ -249,22 +247,6 @@ function SidebarContent({ workspaceLabel, logo, isActive, unreadCount, isAdmin, 
             </Link>
           );
         })}
-
-        {isAdmin && (
-          <>
-            <div className="pt-4 pb-1.5 px-3 text-[10px] uppercase tracking-widest ws-sidebar-muted">
-              Sistema
-            </div>
-            <a
-              href="/admin"
-              onClick={onClick}
-              className="ws-nav-link"
-            >
-              <ShieldCheck className="h-4 w-4" />
-              <span>Painel do Sistema</span>
-            </a>
-          </>
-        )}
       </nav>
 
       <button
