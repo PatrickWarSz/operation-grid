@@ -156,6 +156,28 @@ function HomePortal() {
   );
 }
 
+function HeroStat({
+  icon: Icon,
+  label,
+  value,
+  valueClass,
+}: {
+  icon: typeof Activity;
+  label: string;
+  value: string;
+  valueClass?: string;
+}) {
+  return (
+    <div className="rounded-xl ws-surface-2 px-3 py-3 sm:px-4 sm:py-3.5 border ws-border" style={{ borderWidth: 1 }}>
+      <div className="flex items-center gap-1.5 ws-text-muted">
+        <Icon className="h-3.5 w-3.5" />
+        <span className="text-[10px] uppercase tracking-wider font-medium">{label}</span>
+      </div>
+      <p className={"text-lg sm:text-xl font-semibold ws-text mt-1 " + (valueClass ?? "")}>{value}</p>
+    </div>
+  );
+}
+
 function SectionHeading({
   title, count, subtitle,
 }: { title: string; count: number; subtitle: string; }) {
