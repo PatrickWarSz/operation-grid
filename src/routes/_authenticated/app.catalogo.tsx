@@ -79,14 +79,7 @@ function Catalogo() {
                 ) : comingSoon ? (
                   <span className="text-[11px] ws-text-muted">aguarde</span>
                 ) : (
-                  <Link
-                    to="/"
-                    hash="planos"
-                    className="ws-btn-primary text-xs inline-flex items-center gap-1.5"
-                  >
-                    Saiba mais
-                    <ExternalLink className="h-3 w-3" />
-                  </Link>
+                  <span className="text-[11px] ws-text-muted">bloqueado</span>
                 )}
               </div>
             </div>
