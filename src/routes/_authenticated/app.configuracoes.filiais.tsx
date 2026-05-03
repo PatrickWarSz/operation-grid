@@ -81,9 +81,7 @@ function FiliaisPage() {
           </p>
         </div>
         {atLimit && maxUnits !== Infinity && (
-          <Link to="/" hash="planos" className="ws-btn-primary text-xs">
-            Fazer upgrade
-          </Link>
+          <span className="text-[11px] ws-text-muted">Limite do plano atingido</span>
         )}
       </div>
 

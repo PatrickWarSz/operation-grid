@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, ArrowRight, ArrowLeft, Hexagon, Check, Sparkles } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, Hexagon, Check, Sparkles } from "lucide-react";
 import { AuthBackdrop } from "@/components/auth/AuthBackdrop";
 import { MODULES } from "@/lib/modules";
 import { useAuth } from "@/hooks/useAuth";
@@ -56,19 +56,12 @@ function SignupPage() {
       <AuthBackdrop />
 
       <div className="absolute top-0 inset-x-0 px-6 py-5 flex items-center justify-between z-10">
-        <Link to="/" className="flex items-center gap-2 group">
-          <Hexagon className="h-6 w-6 text-primary fill-primary/10 transition-all group-hover:fill-primary/20" />
+        <div className="flex items-center gap-2 group">
+          <Hexagon className="h-6 w-6 text-primary fill-primary/10" />
           <span className="font-display text-base font-semibold tracking-tight">
             Hub<span className="text-primary">Nexus</span>
           </span>
-        </Link>
-        <Link
-          to="/"
-          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Voltar para o site
-        </Link>
+        </div>
       </div>
 
       <div className="relative z-10 w-full max-w-md">
